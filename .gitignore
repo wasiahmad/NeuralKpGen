@@ -1,0 +1,6 @@
+.idea/*
+*.pyc
+*/__pycache__/*
+deepkp/*/__pycache__/*
+data/*/.txt
+.DS_Store

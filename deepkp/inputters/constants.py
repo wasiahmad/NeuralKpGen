@@ -1,0 +1,18 @@
+PAD = 0
+UNK = 1
+BOS = 2
+EOS = 3
+PKP_BOS = 4
+AKP_BOS = 5
+
+PAD_WORD = '[PAD]'
+UNK_WORD = '[UNK]'
+BOS_WORD = '[BOS]'
+EOS_WORD = '[EOS]'
+PKP_BOS_WORD = '[PKP]'
+AKP_BOS_WORD = '[AKP]'
+
+KP_SEP = '[KPSEP]'
+TITLE_SEP = '[SEP]'
+PRESENT_EOS = '[PSEP]'
+DIGIT = '[DIGIT]'

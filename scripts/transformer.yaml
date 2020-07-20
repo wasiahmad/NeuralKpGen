@@ -1,0 +1,28 @@
+model_type: transformer
+vocab_size: 50000
+
+emsize: 512
+enc_layers: 6
+dec_layers: 6
+
+num_head: 8
+d_k: 64
+d_v: 64
+d_ff: 2048
+absolute_pos: True
+
+trans_drop: 0.2
+dropout_emb: 0.2
+dropout: 0.2
+
+max_src_len: 400
+max_keywords: 10
+max_tgt_len: 60
+
+copy_attn: False
+reuse_copy_attn: False
+share_decoder_embeddings: True
+
+warmup_steps: 1000
+learning_rate: 0.0001
+grad_clipping: 5.0

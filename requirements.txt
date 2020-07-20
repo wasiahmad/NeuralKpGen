@@ -1,0 +1,8 @@
+numpy
+ConfigArgParse
+nltk
+tqdm
+prettytable
+requests
+transformers==3.0.2
+torch==1.5.1

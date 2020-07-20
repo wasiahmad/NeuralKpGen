@@ -1,0 +1,23 @@
+model_type: rnn
+vocab_size: 50000
+
+emsize: 256
+nhid: 256
+enc_layers: 2
+dec_layers: 2
+
+dropout_rnn: 0.2
+dropout_emb: 0.2
+dropout: 0.2
+
+max_src_len: 400
+max_keywords: 10
+max_tgt_len: 60
+
+copy_attn: False
+reuse_copy_attn: False
+share_decoder_embeddings: True
+
+warmup_steps: 0
+learning_rate: 0.001
+grad_clipping: 5.0
