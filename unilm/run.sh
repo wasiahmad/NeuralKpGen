@@ -147,11 +147,11 @@ dataset_choice=$3
 if [[ $model_choice == 'unilm1' ]]; then
     model_type=unilm
     model_name_or_path=unilm1-base-cased
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
 elif [[ $model_choice == 'unilm2' ]]; then
     model_type=unilm
     model_name_or_path=unilm1.2-base-uncased
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
 elif  [[ $model_choice == 'minilm' ]]; then
     model_type=minilm
     model_name_or_path=minilm-l12-h384-uncased
@@ -159,26 +159,26 @@ elif  [[ $model_choice == 'minilm' ]]; then
 elif  [[ $model_choice == 'bert-tiny' ]]; then
     model_type=xbert
     model_name_or_path=bert-tiny-uncased
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
     PER_GPU_TRAIN_BATCH_SIZE=32
 elif  [[ $model_choice == 'bert-mini' ]]; then
     model_type=xbert
     model_name_or_path=bert-mini-uncased
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
     PER_GPU_TRAIN_BATCH_SIZE=32
 elif  [[ $model_choice == 'bert-small' ]]; then
     model_type=xbert
     model_name_or_path=bert-small-uncased
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
     PER_GPU_TRAIN_BATCH_SIZE=32
 elif  [[ $model_choice == 'bert-medium' ]]; then
     model_type=xbert
     model_name_or_path=bert-medium-uncased
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
 elif  [[ $model_choice == 'bert-base' ]]; then
     model_type=bert
     model_name_or_path=bert-base-uncased
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
 elif  [[ $model_choice == 'bert-large' ]]; then
     model_type=bert
     model_name_or_path=bert-large-uncased
@@ -188,9 +188,9 @@ elif  [[ $model_choice == 'bert-large' ]]; then
     NUM_WARM_STEPS=1000
     NUM_TRAIN_STEPS=20000
 elif  [[ $model_choice == 'scibert' ]]; then
-    model_type=bert
+    model_type=xbert
     model_name_or_path=scibert_scivocab_uncased
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
 elif  [[ $model_choice == 'roberta' ]]; then
     model_type=roberta
     model_name_or_path=roberta-base

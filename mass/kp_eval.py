@@ -1390,5 +1390,6 @@ if __name__ == '__main__':
                 mod_preds.append(p)
             hypotheses.append(mod_preds)
 
+    # print(len(hypotheses), len(references), len(sources))
     run_eval((hypotheses, references, sources),
              args.tgt_dir, args.log_file, args.k_list)

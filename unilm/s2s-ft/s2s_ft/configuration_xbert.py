@@ -38,7 +38,7 @@ xBERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
     'bert-mini-uncased': 'https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-4_H-256_A-4/config.json',
     'bert-small-uncased': 'https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-4_H-512_A-8/config.json',
     'bert-medium-uncased': 'https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-8_H-512_A-8/config.json',
-    # 'scibert_scivocab_uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/allenai/scibert_scivocab_cased/config.json",
+    'scibert_scivocab_uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/allenai/scibert_scivocab_uncased/config.json",
 }
 
 

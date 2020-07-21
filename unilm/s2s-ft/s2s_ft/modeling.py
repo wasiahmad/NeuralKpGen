@@ -53,7 +53,7 @@ xBERT_PRETRAINED_MODEL_ARCHIVE_MAP = {
     'bert-mini-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-4_H-256_A-4/pytorch_model.bin",
     'bert-small-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-4_H-512_A-8/pytorch_model.bin",
     'bert-medium-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-8_H-512_A-8/pytorch_model.bin",
-    # 'scibert_scivocab_uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/allenai/scibert_scivocab_uncased/pytorch_model.bin"
+    'scibert_scivocab_uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/allenai/scibert_scivocab_uncased/pytorch_model.bin"
 }
 
 

@@ -43,7 +43,7 @@ PRETRAINED_VOCAB_FILES_MAP = {
             'bert-mini-uncased': 'https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-4_H-256_A-4/vocab.txt',
             'bert-small-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-4_H-512_A-8/vocab.txt",
             'bert-medium-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/google/bert_uncased_L-8_H-512_A-8/vocab.txt",
-            # 'scibert_scivocab_uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/allenai/scibert_scivocab_cased/vocab.txt",
+            'scibert_scivocab_uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/allenai/scibert_scivocab_uncased/vocab.txt",
         }
 }
 

@@ -53,7 +53,6 @@ fairseq-generate $SRCDIR/${DATASET}-bin/ \
 --min-len 1 \
 --no-repeat-ngram-size 3 \
 --max-len-b 60 \
---results-path ${SAVE_DIR_PREFIX}_checkpoints \
 |& tee $LOG_FILE
 
 }
