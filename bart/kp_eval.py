@@ -1150,7 +1150,8 @@ def main(predictions, exp_path, result_file_suffix, k_list=[5, 'M']):
     sum_incorrect_fraction_for_identifying_absent = 0
 
     for data_idx, (src_l, trg_l, pred_l) in \
-            enumerate(tqdm(zip(source, target, preds), total=len(source))):
+            enumerate(tqdm(zip(source, target, preds),
+                           total=len(source), desc='Evaluating...')):
         total_num_src += 1
         # convert the str to token list
         pred_str_list = pred_l.strip().split(';')

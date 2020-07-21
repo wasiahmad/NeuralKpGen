@@ -6,6 +6,34 @@ function make_dir () {
     fi
 }
 
+AVAILABLE_MODEL_CHOICES=(
+    unilm1
+    unilm2
+    minilm
+    bert-tiny
+    bert-mini
+    bert-small
+    bert-medium
+    bert-base
+    bert-large
+    scibert
+    roberta
+)
+
+while getopts ":h" option; do
+   case $option in
+      h) # display Help
+        echo
+        echo "Syntax: run.sh GPU_ID MODEL_NAME DATASET_NAME"
+        echo
+        echo "GPU_ID         A list of gpu ids, separated by comma. e.g., '0,1,2'"
+        echo "MODEL_NAME     Model name; choices: [$(IFS=\| ; echo "${AVAILABLE_MODEL_CHOICES[*]}")]"
+        echo "DATASET_NAME   Name of the training dataset. choices: [kp20k|kptimes]"
+        echo
+        exit;;
+   esac
+done
+
 PER_GPU_TRAIN_BATCH_SIZE=8
 GRADIENT_ACCUMULATION_STEPS=4
 LR=1e-4
@@ -168,12 +196,9 @@ elif  [[ $model_choice == 'roberta' ]]; then
     model_name_or_path=roberta-base
     checkpoint_name=ckpt-150000
 else
-    echo -n "... Wrong model choice!! available choices are: " ;
-    echo "unilm1, unilm2, minilm, bert-tiny, bert-mini, bert-small, \
-        bert-medium, bert-base, bert-large, roberta, scibert" ;
+    echo -n "... Wrong model choice!! available choices: [$(IFS=\| ; echo "${AVAILABLE_MODEL_CHOICES[*]}")]" ;
     exit 1
 fi
-
 
 output_dir=${model_choice}_${dataset_choice}
 if [[ $dataset_choice == 'kp20k' ]]; then

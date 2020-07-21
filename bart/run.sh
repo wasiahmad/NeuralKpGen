@@ -74,6 +74,19 @@ python -W ignore kp_eval.py \
 
 }
 
+while getopts ":h" option; do
+   case $option in
+      h) # display Help
+        echo
+        echo "Syntax: run.sh GPU_ID DATASET_NAME"
+        echo
+        echo "GPU_ID         A list of gpu ids, separated by comma. e.g., '0,1,2'"
+        echo "DATASET_NAME   Name of the training dataset. e.g., kp20k, kptimes, etc."
+        echo
+        exit;;
+   esac
+done
+
 if [[ $2 == 'kp20k' ]]; then
     train "$1" $2
     for dataset in kp20k inspec krapivin nus semeval; do
