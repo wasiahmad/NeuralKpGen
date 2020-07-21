@@ -194,7 +194,7 @@ elif  [[ $model_choice == 'scibert' ]]; then
 elif  [[ $model_choice == 'roberta' ]]; then
     model_type=roberta
     model_name_or_path=roberta-base
-    checkpoint_name=ckpt-150000
+    checkpoint_name=ckpt-20000
 else
     echo -n "... Wrong model choice!! available choices: [$(IFS=\| ; echo "${AVAILABLE_MODEL_CHOICES[*]}")]" ;
     exit 1

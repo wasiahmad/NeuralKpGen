@@ -48,7 +48,7 @@ MODEL_CLASSES = {
 }
 
 
-def prepare_for_training(args, model, checkpoint_state_dict, amp):
+def prepare_for_training(args, model, amp):
     no_decay = ['bias', 'LayerNorm.weight']
     optimizer_grouped_parameters = [
         {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
@@ -57,14 +57,20 @@ def prepare_for_training(args, model, checkpoint_state_dict, amp):
     ]
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
 
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, num_warmup_steps=args.num_warmup_steps,
+        num_training_steps=args.num_training_steps, last_epoch=-1)
+
+    # Check if saved optimizer or scheduler states exist
+    if os.path.isfile(os.path.join(args.model_name_or_path, "optimizer.pt")) and os.path.isfile(
+            os.path.join(args.model_name_or_path, "scheduler.pt")
+    ):
+        # Load in optimizer and scheduler states
+        optimizer.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "optimizer.pt")))
+        scheduler.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "scheduler.pt")))
+
     if amp:
         model, optimizer = amp.initialize(model, optimizer, opt_level=args.fp16_opt_level)
-        if checkpoint_state_dict:
-            amp.load_state_dict(checkpoint_state_dict['amp'])
-
-    if checkpoint_state_dict:
-        optimizer.load_state_dict(checkpoint_state_dict['optimizer'])
-        model.load_state_dict(checkpoint_state_dict['model'])
 
     # multi-gpu training (should be after apex fp16 initialization)
     if args.n_gpu > 1:
@@ -75,7 +81,7 @@ def prepare_for_training(args, model, checkpoint_state_dict, amp):
         model = torch.nn.parallel.DistributedDataParallel(
             model, device_ids=[args.local_rank], output_device=args.local_rank, find_unused_parameters=True)
 
-    return model, optimizer
+    return model, optimizer, scheduler
 
 
 def train(args, training_features, model, tokenizer):
@@ -96,10 +102,8 @@ def train(args, training_features, model, tokenizer):
     # model recover
     recover_step = utils.get_max_epoch_model(args.output_dir)
 
-    checkpoint_state_dict = None
-
     model.to(args.device)
-    model, optimizer = prepare_for_training(args, model, checkpoint_state_dict, amp=amp)
+    model, optimizer, scheduler = prepare_for_training(args, model, amp=amp)
 
     if args.n_gpu == 0 or args.no_cuda:
         per_node_train_batch_size = args.per_gpu_train_batch_size * args.gradient_accumulation_steps
@@ -111,13 +115,6 @@ def train(args, training_features, model, tokenizer):
 
     if args.num_training_steps == -1:
         args.num_training_steps = int(args.num_training_epochs * len(training_features) / train_batch_size)
-
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer, num_warmup_steps=args.num_warmup_steps,
-        num_training_steps=args.num_training_steps, last_epoch=-1)
-
-    if checkpoint_state_dict:
-        scheduler.load_state_dict(checkpoint_state_dict["lr_scheduler"])
 
     train_dataset = utils.Seq2seqDatasetForBert(
         features=training_features, max_source_len=args.max_source_seq_length,
@@ -211,8 +208,14 @@ def train(args, training_features, model, tokenizer):
                     os.makedirs(save_path, exist_ok=True)
                     model_to_save = model.module if hasattr(model, "module") else model
                     model_to_save.save_pretrained(save_path)
+                    tokenizer.save_pretrained(save_path)
 
+                    torch.save(args, os.path.join(save_path, "training_args.bin"))
                     logger.info("Saving model checkpoint %d into %s", global_step, save_path)
+
+                    torch.save(optimizer.state_dict(), os.path.join(save_path, "optimizer.pt"))
+                    torch.save(scheduler.state_dict(), os.path.join(save_path, "scheduler.pt"))
+                    logger.info("Saving optimizer and scheduler states to %s", save_path)
 
     if args.local_rank in [-1, 0] and tb_writer:
         tb_writer.close()
