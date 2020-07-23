@@ -26,9 +26,9 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --required-batch-size-multiple 1 \
 --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
 --weight-decay 0.01 --optimizer adam --adam-betas "(0.9, 0.999)" --adam-eps 1e-08 \
---clip-norm 0.1 --lr-scheduler polynomial_decay --lr 1e-04 \
+--clip-norm 1.0 --lr-scheduler polynomial_decay --lr 1e-04 \
 --max-update $TOTAL_NUM_UPDATES --max-epoch 25 --update-freq 1 \
---validate-interval 1 --patience 3 --no-epoch-checkpoints \
+--validate-interval 1 --patience 5 --no-epoch-checkpoints \
 --find-unused-parameters --ddp-backend=no_c10d \
 --log-format=json 2>&1 | tee logs/rnn.log
 
@@ -58,10 +58,10 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --required-batch-size-multiple 1 \
 --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
 --weight-decay 0.01 --optimizer adam --adam-betas "(0.9, 0.999)" --adam-eps 1e-08 \
---clip-norm 0.1 --lr-scheduler polynomial_decay --lr 1e-04 \
+--clip-norm 1.0 --lr-scheduler polynomial_decay --lr 1e-04 \
 --max-update $TOTAL_NUM_UPDATES --warmup-updates $WARMUP_UPDATES \
 --max-epoch 25 --update-freq 2 \
---validate-interval 1 --patience 3 --no-epoch-checkpoints \
+--validate-interval 1 --patience 5 --no-epoch-checkpoints \
 --find-unused-parameters --ddp-backend=no_c10d \
 --log-format=json 2>&1 | tee logs/transformer.log
 

@@ -30,12 +30,12 @@ def copy_vocab(srcdir, outdir):
     vocab = dict()
     with open(os.path.join(srcdir, 'vocab.txt'), "r") as fin, \
             open(os.path.join(outdir, 'dict.txt'), 'w', encoding='utf-8') as fout:
-        vocab['[PAD]'] = len(vocab)
-        vocab['[UNK]'] = len(vocab)
-        fout.write('[PAD]' + ' ' + str(vocab['[PAD]']) + '\n')
-        fout.write('[UNK]' + ' ' + str(vocab['[UNK]']) + '\n')
+        vocab['[pad]'] = len(vocab)
+        vocab['[unk]'] = len(vocab)
+        fout.write('[pad]' + ' ' + str(vocab['[pad]']) + '\n')
+        fout.write('[unk]' + ' ' + str(vocab['[unk]']) + '\n')
         for idx, line in enumerate(fin):
-            word = line.strip()
+            word = line.strip().lower()
             if word not in vocab:
                 vocab[word] = len(vocab)
                 fout.write(word + ' ' + str(vocab[word]) + '\n')
