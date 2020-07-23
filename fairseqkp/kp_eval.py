@@ -1371,14 +1371,15 @@ if __name__ == '__main__':
             open('{}_hypotheses.txt'.format(args.file_prefix)) as f2:
         for raw_source, candidate in zip(f1, f2):
             tgt_idx = int(raw_source.replace('S-', ''))
-            source = original_sources[tgt_idx]
+            source = original_sources[tgt_idx].lower()
+            source = source.replace(' ##', '')
             sources.append(source)
 
             refs = original_targets[tgt_idx].split(' ; ')
             mod_refs = []
             for r in refs:
                 r = r.replace(' ##', '')
-                r = r.replace('[ digit ]', '[digit]')
+                # r = r.replace('[ digit ]', '[digit]')
                 mod_refs.append(r)
             references.append(mod_refs)
 
@@ -1386,7 +1387,7 @@ if __name__ == '__main__':
             mod_preds = []
             for p in preds:
                 p = p.replace(' ##', '')
-                p = p.replace('[ digit ]', '[digit]')
+                # p = p.replace('[ digit ]', '[digit]')
                 mod_preds.append(p)
             hypotheses.append(mod_preds)
 

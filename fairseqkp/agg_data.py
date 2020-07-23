@@ -18,8 +18,8 @@ def process(infile, outdir, split):
             open(os.path.join(outdir, '{}.target'.format(split)), 'w', encoding='utf-8') as ftgt:
         for line in tqdm(fin):
             ex = json.loads(line)
-            source = ex['title']['text'] + ' {} '.format(constants.TITLE_SEP) + ex['abstract']['text']
-            kps = ex['present_kps']['text'] + ex['absent_kps']['text']
+            source = ex['title']['tokenized'] + ' {} '.format(constants.TITLE_SEP) + ex['abstract']['tokenized']
+            kps = ex['present_kps']['tokenized'] + ex['absent_kps']['tokenized']
             target = ' ; '.join([t for t in kps if t])
             if len(source) > 0 and len(target) > 0:
                 fsrc.write(source + '\n')
@@ -32,8 +32,10 @@ def copy_vocab(srcdir, outdir):
             open(os.path.join(outdir, 'dict.txt'), 'w', encoding='utf-8') as fout:
         vocab['[pad]'] = len(vocab)
         vocab['[unk]'] = len(vocab)
+        vocab[';'] = len(vocab)
         fout.write('[pad]' + ' ' + str(vocab['[pad]']) + '\n')
         fout.write('[unk]' + ' ' + str(vocab['[unk]']) + '\n')
+        fout.write(';' + ' ' + str(vocab[';']) + '\n')
         for idx, line in enumerate(fin):
             word = line.strip().lower()
             if word not in vocab:
