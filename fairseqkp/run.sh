@@ -7,15 +7,16 @@ function rnn_train () {
 
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
+SAVE_DIR=$3
 TOTAL_NUM_UPDATES=50000
 ARCH=lstm
 
 # https://github.com/pytorch/fairseq/blob/ffecb4e3496379edf5ecae1483df5b7e0886c264/fairseq/models/transformer.py#L902
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
---fp16 --num-workers 4 --save-dir ${DATASET}_checkpoints \
+--fp16 --num-workers 4 --save-dir $SAVE_DIR \
 --skip-invalid-size-inputs-valid-test \
 --arch $ARCH --task translation \
---max-tokens 8192 --truncate-source \
+--max-tokens 16384 --truncate-source \
 --max-source-positions 512 --max-target-positions 512 \
 --encoder-embed-dim 512 --decoder-embed-dim 512 \
 --source-lang source --target-lang target \
@@ -38,13 +39,14 @@ function transformer_train () {
 
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
+SAVE_DIR=$3
 TOTAL_NUM_UPDATES=50000
 WARMUP_UPDATES=1000
 ARCH=transformer
 
 # https://github.com/pytorch/fairseq/blob/ffecb4e3496379edf5ecae1483df5b7e0886c264/fairseq/models/transformer.py#L902
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
---fp16 --num-workers 4 --save-dir ${DATASET}_checkpoints \
+--fp16 --num-workers 4 --save-dir $SAVE_DIR \
 --skip-invalid-size-inputs-valid-test \
 --arch $ARCH --task translation \
 --max-tokens 8192 --truncate-source \
@@ -57,8 +59,8 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --share-all-embeddings --share-decoder-input-output-embed \
 --required-batch-size-multiple 1 \
 --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
---weight-decay 0.01 --optimizer adam --adam-betas "(0.9, 0.999)" --adam-eps 1e-08 \
---clip-norm 1.0 --lr-scheduler polynomial_decay --lr 1e-04 \
+--optimizer adam --adam-betas "(0.9, 0.999)" --adam-eps 1e-08 \
+--clip-norm 1.0 --lr 1e-03 \
 --max-update $TOTAL_NUM_UPDATES --warmup-updates $WARMUP_UPDATES \
 --max-epoch 25 --update-freq 2 \
 --validate-interval 1 --patience 5 --no-epoch-checkpoints \
@@ -71,9 +73,9 @@ function decode () {
 
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
-SAVE_DIR_PREFIX=$3
+MODEL_DIR_PREFIX=$3
 LOG_FILE=$4
-MODEL=${SAVE_DIR_PREFIX}_checkpoints/checkpoint_best.pt
+MODEL=${MODEL_DIR_PREFIX}/checkpoint_best.pt
 
 fairseq-generate $SRCDIR/${DATASET}-bin/ \
 --path $MODEL \
@@ -114,17 +116,17 @@ while getopts ":h" option; do
 done
 
 if [[ $2 == 'kp20k' ]]; then
-    $3_train "$1" $2
+    $3_train "$1" $2 ${3}_${2}_checkpoints
     for dataset in kp20k inspec krapivin nus semeval; do
-        decode "$1" $dataset $2 logs/${3}_${dataset}_test.txt
+        decode "$1" $dataset ${3}_${2}_checkpoints logs/${3}_${dataset}_test.txt
         grep ^S logs/${3}_${2}_test.txt | cut -f1 > "logs/${3}_${2}_source.txt"
         grep ^T logs/${3}_${2}_test.txt | cut -f2- > "logs/${3}_${2}_target.txt"
         grep ^H logs/${3}_${2}_test.txt | cut -f3- > "logs/${3}_${2}_hypotheses.txt"
         evaluate ${SRCDIR}/${dataset} logs/${3}_${2} ${3}_${dataset}
     done
 elif [[ $2 == 'kptimes' ]]; then
-    $3_train "$1" $2
-    decode "$1" $2 $2 logs/${3}_${2}_test.txt
+    $3_train "$1" $2 ${3}_${2}_checkpoints
+    decode "$1" $2 ${3}_${2}_checkpoints logs/${3}_${2}_test.txt
     grep ^S logs/${3}_${2}_test.txt | cut -f1 > "logs/${3}_${2}_source.txt"
     grep ^T logs/${3}_${2}_test.txt | cut -f2- > "logs/${3}_${2}_target.txt"
     grep ^H logs/${3}_${2}_test.txt | cut -f3- > "logs/${3}_${2}_hypotheses.txt"
