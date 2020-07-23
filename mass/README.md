@@ -16,6 +16,6 @@ pip install --editable ./
 The path of `fairseq` will be automatically added to `PYTHONPATH` (see [here](https://github.com/wasiahmad/NeuralKpGen/blob/master/mass/run.sh#L9)). During our experiment, we found that `pip install fairseq` raises exception. So, to run MASS model, we need to clone the repository and install it in editable mood.
 
 
-# Reference
+## Reference
 
 - [https://github.com/microsoft/MASS/tree/master/MASS-summarization](https://github.com/microsoft/MASS/tree/master/MASS-summarization)
