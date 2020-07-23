@@ -5,6 +5,7 @@ sys.path.insert(0, '../../')
 import os
 import json
 from tqdm import tqdm
+from pathlib import Path
 from deepkp.inputters import constants
 
 DATA_DIR = '../../data/'
@@ -27,8 +28,7 @@ def process(infile, outfile):
 
 
 if __name__ == '__main__':
-    if not os.path.exists('data'):
-        os.makedirs('data')
+    Path('data').mkdir(parents=True, exist_ok=True)
     process(os.path.join(DATA_DIR, 'scikp/kp20k/train.json'), 'data/kp20k_train.json')
     process(os.path.join(DATA_DIR, 'scikp/kp20k/valid.json'), 'data/kp20k_valid.json')
     process(os.path.join(DATA_DIR, 'scikp/kp20k/test.json'), 'data/kp20k_test.json')
