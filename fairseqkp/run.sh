@@ -72,20 +72,19 @@ function decode () {
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
 SAVE_DIR_PREFIX=$3
-OUTPUT_FILE=$4
+LOG_FILE=$4
+MODEL=${SAVE_DIR_PREFIX}_checkpoints/checkpoint_best.pt
 
-python decode.py \
---data_name_or_path "$SRCDIR/${DATASET}-bin/" \
---data_dir "$SRCDIR/${DATASET}/" \
---checkpoint_dir ${SAVE_DIR_PREFIX}_checkpoints \
---checkpoint_file checkpoint_best.pt \
---output_file $OUTPUT_FILE \
---batch_size 64 \
+fairseq-generate $SRCDIR/${DATASET}-bin/ \
+--path $MODEL \
+--task translation \
+--log-format simple \
+--batch-size 64 \
 --beam 1 \
---min_len 1 \
---lenpen 1.0 \
---no_repeat_ngram_size 3 \
---max_len_b 60;
+--min-len 1 \
+--no-repeat-ngram-size 3 \
+--max-len-b 60 \
+|& tee $LOG_FILE
 
 }
 
@@ -93,10 +92,10 @@ function evaluate () {
 
 python -W ignore kp_eval.py \
 --src_dir $1 \
---pred_file $2 \
+--file_prefix $2 \
 --tgt_dir . \
 --log_file $3 \
---k_list 5 M;
+--k_list 5 M
 
 }
 
@@ -117,11 +116,17 @@ done
 if [[ $2 == 'kp20k' ]]; then
     $3_train "$1" $2
     for dataset in kp20k inspec krapivin nus semeval; do
-        decode "$1" $dataset $2 logs/${3}_${dataset}_test.hypo
-        evaluate ${SRCDIR}/${dataset} logs/${3}_${dataset}_test.hypo ${3}_${dataset}
+        decode "$1" $dataset $2 logs/${3}_${dataset}_test.txt
+        grep ^S logs/${3}_${2}_test.txt | cut -f1 > "logs/${3}_${2}_source.txt"
+        grep ^T logs/${3}_${2}_test.txt | cut -f2- > "logs/${3}_${2}_target.txt"
+        grep ^H logs/${3}_${2}_test.txt | cut -f3- > "logs/${3}_${2}_hypotheses.txt"
+        evaluate ${SRCDIR}/${dataset} logs/${3}_${2} ${3}_${dataset}
     done
 elif [[ $2 == 'kptimes' ]]; then
     $3_train "$1" $2
-    decode "$1" $2 $2 logs/${3}_${2}_test.hypo
-    evaluate ${SRCDIR}/${2} logs/${3}_${2}_test.hypo ${3}_${2}
+    decode "$1" $2 $2 logs/${3}_${2}_test.txt
+    grep ^S logs/${3}_${2}_test.txt | cut -f1 > "logs/${3}_${2}_source.txt"
+    grep ^T logs/${3}_${2}_test.txt | cut -f2- > "logs/${3}_${2}_target.txt"
+    grep ^H logs/${3}_${2}_test.txt | cut -f3- > "logs/${3}_${2}_hypotheses.txt"
+    evaluate ${SRCDIR}/${2} logs/${3}_${2} ${3}_${2}
 fi

@@ -1347,39 +1347,49 @@ def run_eval(predictions, dir_name, file_suffix, k_list):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--src_dir', type=str, required=True, help="Prefix of the filenames")
-    parser.add_argument('--pred_file', type=str, required=True, help="Prefix of the filenames")
+    parser.add_argument('--file_prefix', type=str, required=True, help="Prefix of the filenames")
     parser.add_argument('--tgt_dir', type=str, required=True, help="Path of target directory")
     parser.add_argument('--log_file', type=str, required=True, help="Path of the log file")
     parser.add_argument('--k_list', nargs='+', default=[5, 'M'], help='K values for evaluation')
     args = parser.parse_args()
 
+    original_sources = {}
+    with open(os.path.join(args.src_dir, 'test.source')) as f:
+        for idx, src_text in enumerate(f):
+            original_sources[idx] = src_text.lower()
+
+    original_targets = {}
+    with open(os.path.join(args.src_dir, 'test.target')) as f:
+        for idx, tgt_text in enumerate(f):
+            original_targets[idx] = tgt_text.lower()
+
     hypotheses = []
     references = []
     sources = []
 
-    with open('{}/test.source'.format(args.src_dir)) as f1, \
-            open(args.pred_file) as f2, \
-            open('{}/test.target'.format(args.src_dir)) as f3:
-        for source, candidate, gold in zip(f1, f2, f3):
-            sources.append(source.strip().lower())
+    with open('{}_source.txt'.format(args.file_prefix)) as f1, \
+            open('{}_hypotheses.txt'.format(args.file_prefix)) as f2:
+        for raw_source, candidate in zip(f1, f2):
+            tgt_idx = int(raw_source.replace('S-', ''))
+            source = original_sources[tgt_idx]
+            sources.append(source)
 
-            refs = gold.lower().split(' ; ')
+            refs = original_targets[tgt_idx].split(' ; ')
             mod_refs = []
             for r in refs:
-                r = r.strip()
                 r = r.replace(' ##', '')
                 r = r.replace('[ digit ]', '[digit]')
                 mod_refs.append(r)
             references.append(mod_refs)
 
-            preds = candidate.lower().split(' ; ')
+            preds = candidate.split(' ; ')
             mod_preds = []
             for p in preds:
-                p = p.strip()
                 p = p.replace(' ##', '')
                 p = p.replace('[ digit ]', '[digit]')
                 mod_preds.append(p)
             hypotheses.append(mod_preds)
 
+    # print(len(hypotheses), len(references), len(sources))
     run_eval((hypotheses, references, sources),
              args.tgt_dir, args.log_file, args.k_list)

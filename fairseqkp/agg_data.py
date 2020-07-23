@@ -57,7 +57,7 @@ if __name__ == '__main__':
     process(os.path.join(DATA_DIR, 'scikp/processed/krapivin/test.json'), 'data/krapivin', 'test')
     process(os.path.join(DATA_DIR, 'scikp/processed/semeval/test.json'), 'data/semeval', 'test')
 
-    process(os.path.join(DATA_DIR, 'oagk/processed/train.json'), 'data/oagk', 'train')
-    process(os.path.join(DATA_DIR, 'oagk/processed/valid.json'), 'data/oagk', 'valid')
-    process(os.path.join(DATA_DIR, 'oagk/processed/test.json'), 'data/oagk', 'test')
-    copy_vocab(os.path.join(DATA_DIR, 'oagk/processed'), 'data/oagk')
+    # process(os.path.join(DATA_DIR, 'oagk/processed/train.json'), 'data/oagk', 'train')
+    # process(os.path.join(DATA_DIR, 'oagk/processed/valid.json'), 'data/oagk', 'valid')
+    # process(os.path.join(DATA_DIR, 'oagk/processed/test.json'), 'data/oagk', 'test')
+    # copy_vocab(os.path.join(DATA_DIR, 'oagk/processed'), 'data/oagk')
