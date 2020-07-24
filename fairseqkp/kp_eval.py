@@ -1,4 +1,7 @@
 # adapted from https://github.com/kenchan0226/keyphrase-generation-rl/blob/master/evaluate_prediction.py
+import sys
+
+sys.path.insert(0, '..')
 
 import os
 import logging
@@ -10,11 +13,12 @@ from tqdm import tqdm
 from collections import defaultdict, OrderedDict
 from nltk.stem.porter import *
 from prettytable import PrettyTable
+from deepkp.inputters import constants
 
 PAD_WORD = '<blank>'
 UNK_WORD = '<unk>'
-BERT_UNK_WORD = '[UNK]'
-TITLE_SEP = '<eos>'
+BERT_UNK_WORD = '[unk]'
+TITLE_SEP = '[eos]'
 
 stemmer = PorterStemmer()
 
@@ -1375,7 +1379,7 @@ if __name__ == '__main__':
             source = source.replace(' ##', '')
             sources.append(source)
 
-            refs = original_targets[tgt_idx].split(' ; ')
+            refs = original_targets[tgt_idx].split(' {} '.format(constants.KP_SEP))
             mod_refs = []
             for r in refs:
                 r = r.replace(' ##', '')
@@ -1383,7 +1387,7 @@ if __name__ == '__main__':
                 mod_refs.append(r)
             references.append(mod_refs)
 
-            preds = candidate.split(' ; ')
+            preds = candidate.split(' {} '.format(constants.KP_SEP))
             mod_preds = []
             for p in preds:
                 p = p.replace(' ##', '')

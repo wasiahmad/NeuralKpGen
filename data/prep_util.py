@@ -10,6 +10,10 @@ from transformers import BertTokenizer
 stemmer = PorterStemmer()
 
 SPECIAL_TOKENS = [constants.KP_SEP, constants.TITLE_SEP, constants.PRESENT_EOS]
+UNUSED_TOKEN_MAP = {
+    '[unused0]': constants.PRESENT_EOS,
+    '[unused1]': constants.KP_SEP
+}
 
 
 class SpacyTokenizer(object):
@@ -23,6 +27,10 @@ class SpacyTokenizer(object):
         doc = self.nlp(text)
         return [token.text for token in doc]
 
+    @property
+    def vocab(self):
+        return None
+
 
 class WhiteSpaceTokenizer(object):
 
@@ -32,26 +40,33 @@ class WhiteSpaceTokenizer(object):
     def tokenize(self, text):
         return text.split()
 
+    @property
+    def vocab(self):
+        return None
+
 
 class MultiprocessingTokenizer(object):
 
     def __init__(self, args):
         self.args = args
-
-    def initializer(self):
-        global tokenizer
         if self.args['tokenizer'] == 'BertTokenizer':
-            tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+            self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         elif self.args['tokenizer'] == 'SpacyTokenizer':
-            tokenizer = SpacyTokenizer(model='en_core_web_sm')
+            self.tokenizer = SpacyTokenizer(model='en_core_web_sm')
         elif self.args['tokenizer'] == 'WhiteSpace':
-            tokenizer = WhiteSpaceTokenizer()
+            self.tokenizer = WhiteSpaceTokenizer()
         else:
             raise ValueError('Unknown tokenizer type!')
 
+    def initializer(self):
+        pass
+
+    @property
+    def vocab(self):
+        return self.tokenizer.vocab
+
     def tokenize(self, text):
-        global tokenizer
-        tokens = tokenizer.tokenize(text)
+        tokens = self.tokenizer.tokenize(text)
         return ' '.join(tokens)
 
     def process(self, example):
@@ -126,9 +141,14 @@ def create_vocab(dataset):
         kp_tokens = [token for kp in pkp_tokens + akp_tokens for token in kp]
         vocabulary.update(kp_tokens)
 
-    vocab_items = list(SPECIAL_TOKENS)
+    vocab_items = list()
     for (token, freq) in vocabulary.most_common():
         vocab_items.append(token)
+    # prepend to list
+    for token in SPECIAL_TOKENS:
+        if token not in vocab_items:
+            vocab_items.insert(0, token)
+
     return vocab_items
 
 

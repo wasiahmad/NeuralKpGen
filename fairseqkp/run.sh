@@ -7,20 +7,19 @@ function rnn_train () {
 
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
-SAVE_DIR=$3
+SAVE_DIR=rnn_${DATASET}_checkpoints
+LOG_FILE=logs/rnn_${DATASET}.log
 TOTAL_NUM_UPDATES=50000
-ARCH=lstm
 
-# https://github.com/pytorch/fairseq/blob/ffecb4e3496379edf5ecae1483df5b7e0886c264/fairseq/models/transformer.py#L902
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --fp16 --num-workers 4 --save-dir $SAVE_DIR \
 --skip-invalid-size-inputs-valid-test \
---arch $ARCH --task translation \
+--arch lstm --task translation \
 --max-tokens 16384 --truncate-source \
 --max-source-positions 512 --max-target-positions 512 \
 --encoder-embed-dim 512 --decoder-embed-dim 512 \
 --source-lang source --target-lang target \
---encoder-layers 2 --decoder-layers 2 --encoder-bidirectional \
+--encoder-layers 3 --decoder-layers 3 --encoder-bidirectional \
 --encoder-hidden-size 512 --decoder-hidden-size 512 \
 --decoder-attention 1 --dropout 0.2 \
 --share-all-embeddings --share-decoder-input-output-embed \
@@ -31,7 +30,7 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --max-update $TOTAL_NUM_UPDATES --max-epoch 25 --update-freq 1 \
 --validate-interval 1 --patience 5 --no-epoch-checkpoints \
 --find-unused-parameters --ddp-backend=no_c10d \
---log-format=json 2>&1 | tee logs/rnn.log
+--log-format=json 2>&1 | tee $LOG_FILE
 
 }
 
@@ -39,17 +38,22 @@ function transformer_train () {
 
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
-SAVE_DIR=$3
+SAVE_DIR=transformer_${DATASET}_checkpoints
+LOG_FILE=logs/transformer_${DATASET}.log
 TOTAL_NUM_UPDATES=50000
 WARMUP_UPDATES=1000
-ARCH=transformer
 
-# https://github.com/pytorch/fairseq/blob/ffecb4e3496379edf5ecae1483df5b7e0886c264/fairseq/models/transformer.py#L902
+if [[ $DATASET == 'kp20k' ]]; then
+    MAX_TOKENS=6144
+elif [[ $DATASET == 'kptimes' ]]; then
+    MAX_TOKENS=8192
+fi
+
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --fp16 --num-workers 4 --save-dir $SAVE_DIR \
 --skip-invalid-size-inputs-valid-test \
---arch $ARCH --task translation \
---max-tokens 8192 --truncate-source \
+--arch transformer --task translation \
+--max-tokens $MAX_TOKENS --truncate-source \
 --max-source-positions 512 --max-target-positions 512 \
 --encoder-embed-dim 512 --decoder-embed-dim 512 \
 --source-lang source --target-lang target \
@@ -65,7 +69,7 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --max-epoch 25 --update-freq 2 \
 --validate-interval 1 --patience 5 --no-epoch-checkpoints \
 --find-unused-parameters --ddp-backend=no_c10d \
---log-format=json 2>&1 | tee logs/transformer.log
+--log-format=json 2>&1 | tee $LOG_FILE
 
 }
 
@@ -116,7 +120,7 @@ while getopts ":h" option; do
 done
 
 if [[ $2 == 'kp20k' ]]; then
-    $3_train "$1" $2 ${3}_${2}_checkpoints
+    $3_train "$1" $2
     for dataset in kp20k inspec krapivin nus semeval; do
         decode "$1" $dataset ${3}_${2}_checkpoints logs/${3}_${dataset}_test.txt
         grep ^S logs/${3}_${2}_test.txt | cut -f1 > "logs/${3}_${2}_source.txt"
@@ -125,7 +129,7 @@ if [[ $2 == 'kp20k' ]]; then
         evaluate ${SRCDIR}/${dataset} logs/${3}_${2} ${3}_${dataset}
     done
 elif [[ $2 == 'kptimes' ]]; then
-    $3_train "$1" $2 ${3}_${2}_checkpoints
+    $3_train "$1" $2
     decode "$1" $2 ${3}_${2}_checkpoints logs/${3}_${2}_test.txt
     grep ^S logs/${3}_${2}_test.txt | cut -f1 > "logs/${3}_${2}_source.txt"
     grep ^T logs/${3}_${2}_test.txt | cut -f2- > "logs/${3}_${2}_target.txt"

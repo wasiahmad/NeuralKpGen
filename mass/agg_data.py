@@ -20,7 +20,7 @@ def process(infile, outdir, split):
             ex = json.loads(line)
             source = ex['title']['text'] + ' {} '.format(constants.TITLE_SEP) + ex['abstract']['text']
             kps = ex['present_kps']['text'] + ex['absent_kps']['text']
-            target = ' ; '.join([t for t in kps if t])
+            target = ' {} '.format(constants.KP_SEP).join([t for t in kps if t])
             if len(source) > 0 and len(target) > 0:
                 fsrc.write(source + '\n')
                 ftgt.write(target + '\n')

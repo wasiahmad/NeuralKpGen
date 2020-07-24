@@ -90,7 +90,7 @@ def main(config, TOK):
             for i, ex in enumerate(pool.imap(TOK.process, dataset, 100)):
                 pbar.update()
                 train_dataset.append(ex)
-        with open(os.path.join(config.out_dir, 'train.json'), 'w') as fw:
+        with open(os.path.join(config.out_dir, 'train.json'), 'w', encoding='utf-8') as fw:
             fw.write('\n'.join([json.dumps(ex) for ex in train_dataset]))
 
     valid_dataset = []
@@ -100,7 +100,7 @@ def main(config, TOK):
             for i, ex in enumerate(pool.imap(TOK.process, dataset, 100)):
                 pbar.update()
                 valid_dataset.append(ex)
-        with open(os.path.join(config.out_dir, 'valid.json'), 'w') as fw:
+        with open(os.path.join(config.out_dir, 'valid.json'), 'w', encoding='utf-8') as fw:
             fw.write('\n'.join([json.dumps(ex) for ex in valid_dataset]))
 
     test_dataset = []
@@ -110,13 +110,22 @@ def main(config, TOK):
             for i, ex in enumerate(pool.imap(TOK.process, dataset, 100)):
                 pbar.update()
                 test_dataset.append(ex)
-        with open(os.path.join(config.out_dir, 'test.json'), 'w') as fw:
+        with open(os.path.join(config.out_dir, 'test.json'), 'w', encoding='utf-8') as fw:
             fw.write('\n'.join([json.dumps(ex) for ex in test_dataset]))
 
     if config.form_vocab:
-        vocab = create_vocab(train_dataset + valid_dataset + test_dataset)
-        with open(os.path.join(config.out_dir, 'vocab.txt'), 'w') as fw:
-            fw.write('\n'.join(vocab))
+        if config.tokenizer == 'BertTokenizer':
+            with open(os.path.join(config.out_dir, 'vocab.txt'), 'w') as fw:
+                for token, index in TOK.vocab.items():
+                    if token in UNUSED_TOKEN_MAP:
+                        token = UNUSED_TOKEN_MAP[token]
+                        if token in TOK.vocab:
+                            continue
+                    fw.write('{} {}'.format(token.lower(), index) + '\n')
+        else:
+            vocab = create_vocab(train_dataset + valid_dataset + test_dataset)
+            with open(os.path.join(config.out_dir, 'vocab.txt'), 'w', encoding='utf-8') as fw:
+                fw.write('\n'.join(['{} {}'.format(v, i) for i, v in enumerate(vocab)]))
 
 
 if __name__ == '__main__':

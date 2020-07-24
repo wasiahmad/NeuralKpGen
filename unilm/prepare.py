@@ -18,7 +18,7 @@ def process(infile, outfile):
             ex = json.loads(line)
             source = ex['title']['text'] + ' {} '.format(constants.TITLE_SEP) + ex['abstract']['text']
             kps = ex['present_kps']['text'] + ex['absent_kps']['text']
-            target = ';'.join([t for t in kps if t])
+            target = ' ; '.join([t for t in kps if t])
             out_examples.append({
                 'src': source,
                 'tgt': target

@@ -1,4 +1,7 @@
 # adapted from https://github.com/kenchan0226/keyphrase-generation-rl/blob/master/evaluate_prediction.py
+import sys
+
+sys.path.insert(0, '..')
 
 import os
 import logging
@@ -10,11 +13,7 @@ from tqdm import tqdm
 from collections import defaultdict, OrderedDict
 from nltk.stem.porter import *
 from prettytable import PrettyTable
-
-PAD_WORD = '<blank>'
-UNK_WORD = '<unk>'
-BERT_UNK_WORD = '[UNK]'
-TITLE_SEP = '<eos>'
+from deepkp.inputters import constants
 
 stemmer = PorterStemmer()
 
@@ -229,8 +228,8 @@ def evaluate(pred_str_list, trg_str_list, src_l, score_dict, topk_dict,
     trg_token_2dlist = [trg_str.strip().split(' ') for trg_str in trg_str_list]
 
     src_l = src_l.strip()
-    if TITLE_SEP in src_l:
-        [title, context] = src_l.strip().split(TITLE_SEP)
+    if constants.TITLE_SEP in src_l:
+        [title, context] = src_l.strip().split(constants.TITLE_SEP)
     else:
         title = ""
         context = src_l
@@ -353,7 +352,7 @@ def check_valid_keyphrases(str_list, invalidate_unk=True):
 
         for w in word_list:
             if invalidate_unk:
-                if w == UNK_WORD or w == BERT_UNK_WORD or \
+                if w == constants.UNK_WORD or \
                         w == ',' or w == '.':
                     keep_flag = False
             else:
@@ -1161,8 +1160,8 @@ def main(predictions, exp_path, result_file_suffix, k_list=[5, 'M']):
         trg_token_2dlist = [trg_str.strip().split(' ') for trg_str in trg_str_list]
 
         src_l = src_l.strip()
-        if TITLE_SEP in src_l:
-            [title, context] = src_l.strip().split(TITLE_SEP)
+        if constants.TITLE_SEP in src_l:
+            [title, context] = src_l.strip().split(constants.TITLE_SEP)
         else:
             title = ""
             context = src_l
@@ -1363,7 +1362,7 @@ if __name__ == '__main__':
         for source, candidate, gold in zip(f1, f2, f3):
             sources.append(source.strip().lower())
 
-            refs = gold.lower().split(' ; ')
+            refs = gold.lower().split(' {} '.format(constants.KP_SEP))
             mod_refs = []
             for r in refs:
                 r = r.strip()
@@ -1372,7 +1371,7 @@ if __name__ == '__main__':
                 mod_refs.append(r)
             references.append(mod_refs)
 
-            preds = candidate.lower().split(' ; ')
+            preds = candidate.lower().split(' {} '.format(constants.KP_SEP))
             mod_preds = []
             for p in preds:
                 p = p.strip()

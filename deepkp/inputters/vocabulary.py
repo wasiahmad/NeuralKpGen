@@ -83,7 +83,8 @@ class Vocabulary(object):
             for line in f:
                 if vocab_size and len(self) >= vocab_size:
                     break
-                self.add(line.strip())
+                line = line.strip().split()
+                self.add(line[0])
 
     def remove(self, key):
         if key in self.tok2ind:

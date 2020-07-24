@@ -5,14 +5,15 @@ EOS = 3
 PKP_BOS = 4
 AKP_BOS = 5
 
-PAD_WORD = '[PAD]'
-UNK_WORD = '[UNK]'
-BOS_WORD = '[BOS]'
-EOS_WORD = '[EOS]'
-PKP_BOS_WORD = '[PKP]'
-AKP_BOS_WORD = '[AKP]'
+PAD_WORD = '[pad]'
+UNK_WORD = '[unk]'
+BOS_WORD = '[bos]'
+EOS_WORD = '[eos]'
+PKP_BOS_WORD = '[pkp]'
+AKP_BOS_WORD = '[akp]'
 
-KP_SEP = '[KPSEP]'
-TITLE_SEP = '[SEP]'
-PRESENT_EOS = '[PSEP]'
-DIGIT = '[DIGIT]'
+# KP_SEP = '[kpsep]'
+KP_SEP = ';'
+TITLE_SEP = '[sep]'
+PRESENT_EOS = '[psep]'
+DIGIT = '[digit]'

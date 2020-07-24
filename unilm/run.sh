@@ -47,7 +47,6 @@ function train () {
 
 # path of training data
 TRAIN_FILE=data/${2}_train.json
-#TRAIN_FILE=data/sample.json # for debugging
 
 # folder used to save fine-tuned checkpoints
 OUTPUT_DIR=$3
@@ -58,7 +57,6 @@ CACHE_DIR=~/.cache/torch/transformers
 LOG_FILENAME=${OUTPUT_DIR}/train_log.txt
 
 export CUDA_VISIBLE_DEVICES=$1
-#export CUDA_LAUNCH_BLOCKING="1"
 
 IFS=','
 # read the split words into an array based on comma delimiter
