@@ -154,8 +154,8 @@ def load_and_cache_examples(
         with open(example_file, mode="r", encoding="utf-8") as reader:
             for line in reader:
                 examples.append(json.loads(line))
-        features = []
 
+        # features = []
         # for example in tqdm.tqdm(examples):
         #     if isinstance(example["src"], list):
         #         source_tokens = example["src"]
@@ -170,9 +170,7 @@ def load_and_cache_examples(
 
         threads = min(threads, cpu_count())
         with Pool(threads, initializer=convert_example_to_feature_init, initargs=(tokenizer,)) as p:
-            annotate_ = partial(
-                convert_example,
-            )
+            annotate_ = partial(convert_example, )
             features = list(
                 tqdm.tqdm(
                     p.imap(annotate_, examples, chunksize=32),

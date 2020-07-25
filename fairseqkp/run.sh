@@ -11,6 +11,12 @@ SAVE_DIR=rnn_${DATASET}_checkpoints
 LOG_FILE=logs/rnn_${DATASET}.log
 TOTAL_NUM_UPDATES=50000
 
+if [[ $DATASET == 'kp20k' ]]; then
+    MAX_TOKENS=8192
+elif [[ $DATASET == 'kptimes' ]]; then
+    MAX_TOKENS=16384
+fi
+
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --fp16 --num-workers 4 --save-dir $SAVE_DIR \
 --skip-invalid-size-inputs-valid-test \
@@ -77,9 +83,9 @@ function decode () {
 
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
-MODEL_DIR_PREFIX=$3
+MODEL_DIR=$3
 LOG_FILE=$4
-MODEL=${MODEL_DIR_PREFIX}/checkpoint_best.pt
+MODEL=${MODEL_DIR}/checkpoint_best.pt
 
 fairseq-generate $SRCDIR/${DATASET}-bin/ \
 --path $MODEL \
@@ -123,10 +129,10 @@ if [[ $2 == 'kp20k' ]]; then
     $3_train "$1" $2
     for dataset in kp20k inspec krapivin nus semeval; do
         decode "$1" $dataset ${3}_${2}_checkpoints logs/${3}_${dataset}_test.txt
-        grep ^S logs/${3}_${2}_test.txt | cut -f1 > "logs/${3}_${2}_source.txt"
-        grep ^T logs/${3}_${2}_test.txt | cut -f2- > "logs/${3}_${2}_target.txt"
-        grep ^H logs/${3}_${2}_test.txt | cut -f3- > "logs/${3}_${2}_hypotheses.txt"
-        evaluate ${SRCDIR}/${dataset} logs/${3}_${2} ${3}_${dataset}
+        grep ^S logs/${3}_${dataset}_test.txt | cut -f1 > "logs/${3}_${dataset}_source.txt"
+        grep ^T logs/${3}_${dataset}_test.txt | cut -f2- > "logs/${3}_${dataset}_target.txt"
+        grep ^H logs/${3}_${dataset}_test.txt | cut -f3- > "logs/${3}_${dataset}_hypotheses.txt"
+        evaluate ${SRCDIR}/${dataset} logs/${3}_${dataset} ${3}_${dataset}
     done
 elif [[ $2 == 'kptimes' ]]; then
     $3_train "$1" $2

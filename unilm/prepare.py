@@ -1,6 +1,6 @@
 import sys
 
-sys.path.insert(0, '../../')
+sys.path.insert(0, '..')
 
 import os
 import json
@@ -8,7 +8,7 @@ from tqdm import tqdm
 from pathlib import Path
 from deepkp.inputters import constants
 
-DATA_DIR = '../../data/'
+DATA_DIR = '../data/'
 
 
 def process(infile, outfile):
@@ -29,13 +29,13 @@ def process(infile, outfile):
 
 if __name__ == '__main__':
     Path('data').mkdir(parents=True, exist_ok=True)
-    process(os.path.join(DATA_DIR, 'scikp/kp20k/train.json'), 'data/kp20k_train.json')
-    process(os.path.join(DATA_DIR, 'scikp/kp20k/valid.json'), 'data/kp20k_valid.json')
-    process(os.path.join(DATA_DIR, 'scikp/kp20k/test.json'), 'data/kp20k_test.json')
-    process(os.path.join(DATA_DIR, 'scikp/inspec/test.json'), 'data/inspec_test.json')
-    process(os.path.join(DATA_DIR, 'scikp/nus/test.json'), 'data/nus_test.json')
-    process(os.path.join(DATA_DIR, 'scikp/krapivin/test.json'), 'data/krapivin_test.json')
-    process(os.path.join(DATA_DIR, 'scikp/semeval/test.json'), 'data/semeval_test.json')
+    process(os.path.join(DATA_DIR, 'scikp/processed/kp20k/train.json'), 'data/kp20k_train.json')
+    process(os.path.join(DATA_DIR, 'scikp/processed/kp20k/valid.json'), 'data/kp20k_valid.json')
+    process(os.path.join(DATA_DIR, 'scikp/processed/kp20k/test.json'), 'data/kp20k_test.json')
+    process(os.path.join(DATA_DIR, 'scikp/processed/inspec/test.json'), 'data/inspec_test.json')
+    process(os.path.join(DATA_DIR, 'scikp/processed/nus/test.json'), 'data/nus_test.json')
+    process(os.path.join(DATA_DIR, 'scikp/processed/krapivin/test.json'), 'data/krapivin_test.json')
+    process(os.path.join(DATA_DIR, 'scikp/processed/semeval/test.json'), 'data/semeval_test.json')
     process(os.path.join(DATA_DIR, 'kptimes/processed/train.json'), 'data/kptimes_train.json')
     process(os.path.join(DATA_DIR, 'kptimes/processed/valid.json'), 'data/kptimes_valid.json')
     process(os.path.join(DATA_DIR, 'kptimes/processed/test.json'), 'data/kptimes_test.json')
