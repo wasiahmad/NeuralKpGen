@@ -12,7 +12,6 @@ EOS_WORD = '[eos]'
 PKP_BOS_WORD = '[pkp]'
 AKP_BOS_WORD = '[akp]'
 
-# KP_SEP = '[kpsep]'
 KP_SEP = ';'
 TITLE_SEP = '[sep]'
 PRESENT_EOS = '[psep]'

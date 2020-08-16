@@ -5,23 +5,34 @@ mkdir -p logs
 
 function rnn_train () {
 
+#IFS=',' read -a GPU_IDS <<< "$1"
+#NUM_GPUS=${#GPU_IDS[@]}
+
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
 SAVE_DIR=rnn_${DATASET}_checkpoints
 LOG_FILE=logs/rnn_${DATASET}.log
-TOTAL_NUM_UPDATES=50000
 
-if [[ $DATASET == 'kp20k' ]]; then
-    MAX_TOKENS=8192
+if [[ $DATASET == 'kp20k' || $DATASET == 'oagk' ]]; then
+    BATCH_SIZE=16
 elif [[ $DATASET == 'kptimes' ]]; then
-    MAX_TOKENS=16384
+    BATCH_SIZE=32
 fi
+
+declare -A NUM_UPDATES
+NUM_UPDATES['kp20k']=50000
+NUM_UPDATES['oagk']=100000
+NUM_UPDATES['kptimes']=50000
+
+UPDATE_FERQ=1
+TOTAL_NUM_UPDATES=${NUM_UPDATES[${DATASET}]}
+MAX_EPOCH=50
 
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --fp16 --num-workers 4 --save-dir $SAVE_DIR \
 --skip-invalid-size-inputs-valid-test \
 --arch lstm --task translation \
---max-tokens 16384 --truncate-source \
+--batch-size $BATCH_SIZE --truncate-source \
 --max-source-positions 512 --max-target-positions 512 \
 --encoder-embed-dim 512 --decoder-embed-dim 512 \
 --source-lang source --target-lang target \
@@ -32,8 +43,8 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --required-batch-size-multiple 1 \
 --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
 --optimizer adam --adam-betas "(0.9, 0.999)" --adam-eps 1e-08 \
---clip-norm 1.0 --lr 1e-03 \
---max-update $TOTAL_NUM_UPDATES --max-epoch 25 --update-freq 1 \
+--clip-norm 1.0 --lr 1e-03 --max-epoch $MAX_EPOCH \
+--max-update $TOTAL_NUM_UPDATES --update-freq $UPDATE_FERQ \
 --validate-interval 1 --patience 5 --no-epoch-checkpoints \
 --find-unused-parameters --ddp-backend=no_c10d \
 --log-format=json 2>&1 | tee $LOG_FILE
@@ -42,24 +53,41 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 
 function transformer_train () {
 
+IFS=',' read -a GPU_IDS <<< "$1"
+NUM_GPUS=${#GPU_IDS[@]}
+if [[ $NUM_GPUS < 4 ]]; then
+    echo "Warning: Use of fours GPUs is recommended"
+fi
+
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
 SAVE_DIR=transformer_${DATASET}_checkpoints
 LOG_FILE=logs/transformer_${DATASET}.log
-TOTAL_NUM_UPDATES=50000
-WARMUP_UPDATES=1000
 
-if [[ $DATASET == 'kp20k' ]]; then
-    MAX_TOKENS=6144
+# kp20k: 510k, oagk: 2M, kptimes: 260k
+if [[ $DATASET == 'kp20k' || $DATASET == 'oagk' ]]; then
+    BATCH_SIZE=8
 elif [[ $DATASET == 'kptimes' ]]; then
-    MAX_TOKENS=8192
+    BATCH_SIZE=16
 fi
+
+declare -A NUM_UPDATES
+NUM_UPDATES['kp20k']=50000
+NUM_UPDATES['oagk']=100000
+NUM_UPDATES['kptimes']=50000
+
+EFFECTIVE_BATCH_SIZE=256 # batch_size * update_freq * num_gpus
+BSZ_PER_GPU=$((EFFECTIVE_BATCH_SIZE/NUM_GPUS))
+UPDATE_FERQ=$((BSZ_PER_GPU/BATCH_SIZE))
+TOTAL_NUM_UPDATES=${NUM_UPDATES[${DATASET}]}
+WARMUP_UPDATES=$((TOTAL_NUM_UPDATES/20)) # (1/20) * of total_num_updates
+MAX_EPOCH=50
 
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --fp16 --num-workers 4 --save-dir $SAVE_DIR \
 --skip-invalid-size-inputs-valid-test \
 --arch transformer --task translation \
---max-tokens $MAX_TOKENS --truncate-source \
+--batch-size $BATCH_SIZE --truncate-source \
 --max-source-positions 512 --max-target-positions 512 \
 --encoder-embed-dim 512 --decoder-embed-dim 512 \
 --source-lang source --target-lang target \
@@ -72,7 +100,7 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --weight-decay 0.01 --optimizer adam --adam-betas "(0.9, 0.999)" --adam-eps 1e-08 \
 --clip-norm 1.0 --lr-scheduler polynomial_decay --lr 1e-04 \
 --max-update $TOTAL_NUM_UPDATES --warmup-updates $WARMUP_UPDATES \
---max-epoch 25 --update-freq 2 \
+--max-epoch $MAX_EPOCH --update-freq $UPDATE_FERQ \
 --validate-interval 1 --patience 5 --no-epoch-checkpoints \
 --find-unused-parameters --ddp-backend=no_c10d \
 --log-format=json 2>&1 | tee $LOG_FILE
@@ -115,10 +143,10 @@ while getopts ":h" option; do
    case $option in
       h) # display Help
         echo
-        echo "Syntax: run.sh GPU_ID DATASET_NAME"
+        echo "Syntax: run.sh GPU_ID DATASET_NAME MODEL_TYPE"
         echo
         echo "GPU_ID         A list of gpu ids, separated by comma. e.g., '0,1,2'"
-        echo "DATASET_NAME   Name of the training dataset. Choices: kp20k, kptimes."
+        echo "DATASET_NAME   Name of the training dataset. Choices: kp20k, oagk, kptimes."
         echo "MODEL_TYPE     Model type. Choices: rnn, transformer."
         echo
         exit;;
@@ -128,6 +156,15 @@ done
 if [[ $2 == 'kp20k' ]]; then
     $3_train "$1" $2
     for dataset in kp20k inspec krapivin nus semeval; do
+        decode "$1" $dataset ${3}_${2}_checkpoints logs/${3}_${dataset}_test.txt
+        grep ^S logs/${3}_${dataset}_test.txt | cut -f1 > "logs/${3}_${dataset}_source.txt"
+        grep ^T logs/${3}_${dataset}_test.txt | cut -f2- > "logs/${3}_${dataset}_target.txt"
+        grep ^H logs/${3}_${dataset}_test.txt | cut -f3- > "logs/${3}_${dataset}_hypotheses.txt"
+        evaluate ${SRCDIR}/${dataset} logs/${3}_${dataset} ${3}_${dataset}
+    done
+elif [[ $2 == 'oagk' ]]; then
+    $3_train "$1" $2
+    for dataset in oagk inspec krapivin nus semeval; do
         decode "$1" $dataset ${3}_${2}_checkpoints logs/${3}_${dataset}_test.txt
         grep ^S logs/${3}_${dataset}_test.txt | cut -f1 > "logs/${3}_${dataset}_source.txt"
         grep ^T logs/${3}_${dataset}_test.txt | cut -f2- > "logs/${3}_${dataset}_target.txt"

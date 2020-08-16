@@ -14,7 +14,7 @@ for SPLIT in train valid test; do
         --inputs "$SRCDIR/$TASK/$SPLIT.$LANG" \
         --outputs "$SRCDIR/$TASK/$SPLIT.enc.$LANG" \
         --max_len 510 \
-        --workers 4;
+        --workers 60;
   done
 done
 
@@ -43,7 +43,7 @@ for SPLIT in test; do
         --inputs "$SRCDIR/$TASK/$SPLIT.$LANG" \
         --outputs "$SRCDIR/$TASK/$SPLIT.enc.$LANG" \
         --max_len 510 \
-        --workers 4;
+        --workers 60;
   done
 done
 
@@ -62,7 +62,7 @@ fairseq-preprocess \
 
 }
 
-for task in kp20k kptimes; do
+for task in kp20k oagk kptimes; do
     TASK=$task
     DICT_FILE=data/${task}/dict.txt
     preprocess
@@ -74,4 +74,3 @@ for task in nus inspec krapivin semeval; do
     preprocess_test_only
     process_test_only
 done
-

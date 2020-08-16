@@ -111,22 +111,18 @@ class MultiprocessingTokenizer(object):
             'title': {
                 'text': title,
                 'tokenized': title_tokenized
-
             },
             'abstract': {
                 'text': abstract,
                 'tokenized': abstract_tokenized
-
             },
             'present_kps': {
                 'text': present_keywords,
                 'tokenized': pkp_tokenized
-
             },
             'absent_kps': {
                 'text': absent_keywords,
                 'tokenized': akp_tokenized
-
             }
         }
 

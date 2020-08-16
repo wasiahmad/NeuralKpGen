@@ -1,8 +1,8 @@
 model_type: rnn
 vocab_size: 50000
 
-emsize: 256
-nhid: 256
+emsize: 512
+nhid: 512
 enc_layers: 2
 dec_layers: 2
 

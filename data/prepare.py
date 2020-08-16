@@ -118,9 +118,8 @@ def main(config, TOK):
             with open(os.path.join(config.out_dir, 'vocab.txt'), 'w') as fw:
                 for token, index in TOK.vocab.items():
                     if token in UNUSED_TOKEN_MAP:
-                        token = UNUSED_TOKEN_MAP[token]
-                        if token in TOK.vocab:
-                            continue
+                        if UNUSED_TOKEN_MAP[token] not in TOK.vocab:
+                            token = UNUSED_TOKEN_MAP[token]
                     fw.write('{} {}'.format(token.lower(), index) + '\n')
         else:
             vocab = create_vocab(train_dataset + valid_dataset + test_dataset)
@@ -159,6 +158,7 @@ if __name__ == '__main__':
         opt.test = os.path.join(opt.data_dir, 'KPTimes.test.jsonl')
 
     if opt.dataset == 'OAGK':
+        options['kp_separator'] = ','
         opt.train = os.path.join(opt.data_dir, 'oagk_train.txt')
         opt.valid = os.path.join(opt.data_dir, 'oagk_val.txt')
         opt.test = os.path.join(opt.data_dir, 'oagk_test.txt')
