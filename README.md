@@ -59,7 +59,7 @@ While training and evaluating EG-Net, a list of files are generated inside a `tm
 
 #### How can we set the model parameters?
 
-We can set the hyper-parameters in the [config.yaml](https://github.com/wasiahmad/NeuralKpGen/blob/master/scripts/config.yaml) file.
+We can set the hyper-parameters in the [rnn.yaml](https://github.com/wasiahmad/NeuralKpGen/blob/master/scripts/rnn.yaml) and [transformer.yaml](https://github.com/wasiahmad/NeuralKpGen/blob/master/scripts/transformer.yaml) file.
 
 #### How many GPUs do we need to train the models?
 
@@ -68,7 +68,7 @@ We can set the hyper-parameters in the [config.yaml](https://github.com/wasiahma
 
 #### Do we use BEAM decoding to generate keyphrases?
 
-No, we only use greedy decoding!
+No, we only use greedy decoding.
 
 
 ## Notes
