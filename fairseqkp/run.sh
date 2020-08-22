@@ -5,9 +5,6 @@ mkdir -p logs
 
 function rnn_train () {
 
-#IFS=',' read -a GPU_IDS <<< "$1"
-#NUM_GPUS=${#GPU_IDS[@]}
-
 export CUDA_VISIBLE_DEVICES=$1
 DATASET=$2
 SAVE_DIR=rnn_${DATASET}_checkpoints
@@ -26,7 +23,7 @@ NUM_UPDATES['kptimes']=50000
 
 UPDATE_FERQ=1
 TOTAL_NUM_UPDATES=${NUM_UPDATES[${DATASET}]}
-MAX_EPOCH=50
+MAX_EPOCH=25
 
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --fp16 --num-workers 4 --save-dir $SAVE_DIR \
@@ -64,24 +61,28 @@ DATASET=$2
 SAVE_DIR=transformer_${DATASET}_checkpoints
 LOG_FILE=logs/transformer_${DATASET}.log
 
+# EFFECTIVE_BATCH_SIZE = batch_size * update_freq * num_gpus
 # kp20k: 510k, oagk: 2M, kptimes: 260k
-if [[ $DATASET == 'kp20k' || $DATASET == 'oagk' ]]; then
+# We train models for ~25 epochs
+
+if [[ $DATASET == 'kp20k' ]]; then
     BATCH_SIZE=8
+    EFFECTIVE_BATCH_SIZE=128
+    TOTAL_NUM_UPDATES=100000
+elif [[ $DATASET == 'oagk' ]]; then
+    BATCH_SIZE=8
+    EFFECTIVE_BATCH_SIZE=256
+    TOTAL_NUM_UPDATES=200000
 elif [[ $DATASET == 'kptimes' ]]; then
     BATCH_SIZE=16
+    EFFECTIVE_BATCH_SIZE=64
+    TOTAL_NUM_UPDATES=100000
 fi
 
-declare -A NUM_UPDATES
-NUM_UPDATES['kp20k']=50000
-NUM_UPDATES['oagk']=100000
-NUM_UPDATES['kptimes']=50000
-
-EFFECTIVE_BATCH_SIZE=256 # batch_size * update_freq * num_gpus
 BSZ_PER_GPU=$((EFFECTIVE_BATCH_SIZE/NUM_GPUS))
 UPDATE_FERQ=$((BSZ_PER_GPU/BATCH_SIZE))
-TOTAL_NUM_UPDATES=${NUM_UPDATES[${DATASET}]}
 WARMUP_UPDATES=$((TOTAL_NUM_UPDATES/20)) # (1/20) * of total_num_updates
-MAX_EPOCH=50
+MAX_EPOCH=25
 
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --fp16 --num-workers 4 --save-dir $SAVE_DIR \
@@ -103,6 +104,7 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --max-epoch $MAX_EPOCH --update-freq $UPDATE_FERQ \
 --validate-interval 1 --patience 5 --no-epoch-checkpoints \
 --find-unused-parameters --ddp-backend=no_c10d \
+--reset-dataloader --reset-lr-scheduler --reset-meters --reset-optimizer \
 --log-format=json 2>&1 | tee $LOG_FILE
 
 }
@@ -164,7 +166,7 @@ if [[ $2 == 'kp20k' ]]; then
     done
 elif [[ $2 == 'oagk' ]]; then
     $3_train "$1" $2
-    for dataset in oagk inspec krapivin nus semeval; do
+    for dataset in oagk kp20k inspec krapivin nus semeval; do
         decode "$1" $dataset ${3}_${2}_checkpoints logs/${3}_${dataset}_test.txt
         grep ^S logs/${3}_${dataset}_test.txt | cut -f1 > "logs/${3}_${dataset}_source.txt"
         grep ^T logs/${3}_${dataset}_test.txt | cut -f2- > "logs/${3}_${dataset}_target.txt"
