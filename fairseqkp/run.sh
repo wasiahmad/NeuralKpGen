@@ -166,7 +166,7 @@ if [[ $2 == 'kp20k' ]]; then
     done
 elif [[ $2 == 'oagk' ]]; then
     $3_train "$1" $2
-    for dataset in oagk kp20k inspec krapivin nus semeval; do
+    for dataset in oagk inspec krapivin nus semeval; do
         decode "$1" $dataset ${3}_${2}_checkpoints logs/${3}_${dataset}_test.txt
         grep ^S logs/${3}_${dataset}_test.txt | cut -f1 > "logs/${3}_${dataset}_source.txt"
         grep ^T logs/${3}_${dataset}_test.txt | cut -f2- > "logs/${3}_${dataset}_target.txt"

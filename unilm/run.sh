@@ -28,7 +28,7 @@ while getopts ":h" option; do
         echo
         echo "GPU_ID         A list of gpu ids, separated by comma. e.g., '0,1,2'"
         echo "MODEL_NAME     Model name; choices: [$(IFS=\| ; echo "${AVAILABLE_MODEL_CHOICES[*]}")]"
-        echo "DATASET_NAME   Name of the training dataset. choices: [kp20k|kptimes]"
+        echo "DATASET_NAME   Name of the training dataset. choices: [kp20k|oagk|kptimes]"
         echo
         exit;;
    esac
@@ -205,6 +205,12 @@ if [[ $dataset_choice == 'kp20k' ]]; then
         decode "$1" $dataset $model_type $model_name_or_path $output_dir $checkpoint_name
         evaluate $dataset $output_dir $checkpoint_name ${model_choice}_${dataset}
     done
+elif [[ $dataset_choice == 'oagk' ]]; then
+    train "$1" $dataset_choice $output_dir $model_type $model_name_or_path
+    for dataset in oagk inspec krapivin nus semeval; do
+        decode "$1" $dataset $model_type $model_name_or_path $output_dir $checkpoint_name
+        evaluate $dataset $output_dir $checkpoint_name ${model_choice}_${dataset}
+    done
 elif [[ $dataset_choice == 'kptimes' ]]; then
     train "$1" $dataset_choice $output_dir $model_type $model_name_or_path
     dataset=kptimes
@@ -212,6 +218,6 @@ elif [[ $dataset_choice == 'kptimes' ]]; then
     evaluate $dataset $output_dir $checkpoint_name ${model_choice}_${dataset}
 else
     echo -n "... Wrong dataset choice!! available choices are: " ;
-    echo "kp20k, kptimes" ;
+    echo "kp20k, oagk, kptimes" ;
     exit 1
 fi
