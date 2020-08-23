@@ -1,3 +1,5 @@
+## Datasets
+
 ### Dataset: KP20k, Inspec, NUS, SemEval, Krapivin
 
 - Paper: https://www.aclweb.org/anthology/P17-1054/
@@ -27,3 +29,9 @@
 
 - Paper: https://arxiv.org/abs/2006.05324
 - Download data from: https://microsoft.github.io/TREC-2020-Deep-Learning/
+
+
+## Downloading and Preprocessing
+
+Go to the directory after the dataset name you want to use and execute the `run.sh` script. That's it!
+
