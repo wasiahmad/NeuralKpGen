@@ -24,7 +24,6 @@
 
 - Paper: https://www.aclweb.org/anthology/D19-1521/
 - Download data from: https://github.com/microsoft/OpenKP#download-the-dataset
-- Prepare: Run `cd openkp && bash run.sh`.
 
 ### MSMARCO (Query Prediction from Clicked Documents)
 
