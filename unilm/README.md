@@ -15,6 +15,8 @@ Here, we finetune Pre-trained NLU and NLG models for Keyphrase generation (KP20k
 
 - Make sure you have the [required packages](https://github.com/wasiahmad/NeuralKpGen/blob/master/requirements.txt) installed.
 - Download and preprocess the datasets: KP20k, OAGK, and KPTimes (if not done). See details [here](https://github.com/wasiahmad/NeuralKpGen/edit/master/data/README.md).
+- The run `python prepare.py`.
+
 
 ## Model Training and Evaluation
 
