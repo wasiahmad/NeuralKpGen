@@ -65,7 +65,7 @@ unilm1_kp20k
   |-train_opt.json
 ```
 
-Please note,
+**[Notes]**
 
 - When **kp20k|oagk** is used as the training dataset, the models are evaluated on five additional datasets: `[kp20k|oagk, nus, semeval, krapivin, inspec]`.
 - The predicted keyphrases are written in `ckpt-20000.[dataset_name].test` files.
