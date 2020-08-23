@@ -84,6 +84,9 @@ fairseq-preprocess \
 
 }
 
+# aggregate data first
+python agg_data.py
+
 for task in kp20k kptimes; do
     TASK=$task
     bpe_preprocess

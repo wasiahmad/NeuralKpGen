@@ -62,6 +62,9 @@ fairseq-preprocess \
 
 }
 
+# aggregate data first
+python agg_data.py
+
 for task in kp20k oagk kptimes; do
     TASK=$task
     DICT_FILE=data/${task}/dict.txt
