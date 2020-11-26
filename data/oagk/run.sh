@@ -47,5 +47,29 @@ fi
 
 }
 
+function prepare_oagkx () {
+
+SRC_DIR=../..
+OUTDIR=$2
+
+if [[ ! -d $OUTDIR ]]; then
+    echo "============Processing OAGK dataset============"
+    PYTHONPATH=$SRC_DIR python -W ignore ../prepare.py \
+        -dataset OAGK \
+        -data_dir OAGK \
+        -out_dir $OUTDIR \
+        -tokenizer $1 \
+        -workers 60
+    echo "Aggregating statistics of the processed OAGK dataset"
+    python ../data_stat.py \
+        -choice 'processed' \
+        -train_file $OUTDIR/train.json \
+        -valid_file $OUTDIR/valid.json \
+        -test_file $OUTDIR/test.json
+fi
+
+}
+
 download_oagk
+#download_oagkx
 prepare BertTokenizer processed
