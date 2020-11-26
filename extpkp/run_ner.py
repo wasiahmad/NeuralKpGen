@@ -297,9 +297,37 @@ def main():
         # Save predictions
         if trainer.is_world_master():
             with open(output_test_predictions_file, "w") as writer:
-                for p in preds_list:
-                    writer.write(' '.join(p) + '\n')
+                with open(os.path.join(data_args.data_dir, "test.txt"), "r") as f:
+                    example_id = 0
+                    for line in f:
+                        ex = json.loads(line.strip())
+                        # note. we may truncate source
+                        assert len(ex['source']) >= len(preds_list[example_id])
+                        keyphrases = []
+                        kp_tokens = []
+                        for idx, tag in enumerate(preds_list[example_id]):
+                            if tag == 'B':
+                                if len(kp_tokens) != 0:
+                                    # save the previous keyphrase
+                                    keyphrases.append(' '.join(kp_tokens))
+                                    kp_tokens = []
+                                kp_tokens.append(ex['source'][idx])
+                            elif tag == 'I':
+                                # note. model may predict I tag which is not preceded by B tag
+                                # assert len(kp_tokens) > 0
+                                kp_tokens.append(ex['source'][idx])
+                            else:
+                                if len(kp_tokens) != 0:
+                                    keyphrases.append(' '.join(kp_tokens))
+                                    kp_tokens = []
 
+                        if len(kp_tokens) != 0:
+                            keyphrases.append(' '.join(kp_tokens))
+                        # removing duplicates
+                        kps = []
+                        [kps.append(kp) for kp in keyphrases if kp not in kps]
+                        writer.write(' ; '.join(kps) + '\n')
+                        example_id += 1
     return results
 
 
