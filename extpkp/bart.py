@@ -1,5 +1,13 @@
-from transformers.modeling_utils import PreTrainedModel
-from transformers.modeling_bart import BartClassificationHead
+import torch
+import torch.nn.functional as F
+from torch.nn import CrossEntropyLoss
+
+from transformers.modeling_bart import (
+    BartConfig,
+    BartModel,
+    PretrainedBartModel,
+    BartClassificationHead
+)
 
 
 class BartForTokenClassification(PretrainedBartModel):
@@ -12,8 +20,6 @@ class BartForTokenClassification(PretrainedBartModel):
         self.model._init_weights(self.classification_head.dense)
         self.model._init_weights(self.classification_head.out_proj)
 
-    @add_start_docstrings_to_callable(BART_INPUTS_DOCSTRING)
-    @add_code_sample_docstrings(tokenizer_class=_TOKENIZER_FOR_DOC, checkpoint="facebook/bart-large")
     def forward(
             self,
             input_ids,
