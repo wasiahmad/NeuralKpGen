@@ -326,7 +326,7 @@ def main():
                         # removing duplicates
                         kps = []
                         [kps.append(kp) for kp in keyphrases if kp not in kps]
-                        writer.write(' ; '.join(kps) + '\n')
+                        writer.write(';'.join(kps) + '\n')
                         example_id += 1
     return results
 

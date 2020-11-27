@@ -62,7 +62,21 @@ python run_ner.py \
 }
 
 
+function compute_score () {
+
+export OUTPUT_DIR=${BASE_DIR}/kp20k-${BERT_MODEL}
+
+python -W ignore evaluate.py \
+--src_dir ${BASE_DIR}/data/processed/$1 \
+--pred_file ${OUTPUT_DIR}/$1_predictions.txt \
+--tgt_dir ${OUTPUT_DIR} \
+--log_file $1 \
+--k_list 5 10 M;
+
+}
+
 train $1
 for dataset in krapivin nus inspec semeval; do
     evaluate $1 $dataset
+    compute_score $dataset
 done

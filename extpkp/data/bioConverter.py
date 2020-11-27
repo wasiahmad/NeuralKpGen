@@ -100,6 +100,7 @@ class MultiprocessingTokenizer(object):
         return {
             'id': example['id'],
             'paragraph': paragraph,
+            'pkp_tokenized': pkp_tokenized,
             'labels': compute_bio_tags(paragraph, pkp_tokenized)
         }
 
@@ -262,6 +263,11 @@ def main(config, TOK):
                     json.dumps({'source': ex['paragraph'], 'target': ex['labels']})
                     + '\n'
                 )
+        with open(os.path.join(config.out_dir, 'test.source'), 'w', encoding='utf-8') as fw1, \
+                open(os.path.join(config.out_dir, 'test.target'), 'w', encoding='utf-8') as fw2:
+            for ex in test_dataset:
+                fw1.write(' '.join(ex['paragraph']) + '\n')
+                fw2.write(';'.join(ex['pkp_tokenized']) + '\n')
 
 
 if __name__ == '__main__':
