@@ -188,8 +188,8 @@ def convert_example_to_feature(
     assert len(segment_ids) == max_seq_length
     assert len(label_ids) == max_seq_length
 
-    if "token_type_ids" not in tokenizer.model_input_names:
-        segment_ids = None
+    # if "token_type_ids" not in tokenizer.model_input_names:
+    #     segment_ids = None
 
     return InputFeatures(
         input_ids=input_ids,

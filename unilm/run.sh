@@ -71,8 +71,10 @@ python s2s-ft/run_seq2seq.py \
 --model_type $4 \
 --model_name_or_path $5 \
 --save_steps 2000 \
---do_lower_case --fp16 --fp16_opt_level O1 \
---max_source_seq_length 464 --max_target_seq_length 48 \
+--do_lower_case \
+--fp16 --fp16_opt_level O1 \
+--max_source_seq_length 464 \
+--max_target_seq_length 48 \
 --per_gpu_train_batch_size $PER_GPU_TRAIN_BATCH_SIZE \
 --gradient_accumulation_steps $GRADIENT_ACCUMULATION_STEPS \
 --learning_rate $LR \
@@ -109,11 +111,20 @@ INPUT_JSON=data/${DATASET_NAME}_${SPLIT}.json
 LOG_FILENAME=${MODEL_DIR}/test_log.txt
 
 python s2s-ft/decode_seq2seq.py \
---fp16 --model_type $MODEL_TYPE --tokenizer_name $TOKENIZER_NAME \
---input_file ${INPUT_JSON} --split $SPLIT --do_lower_case \
+--fp16 \
+--model_type $MODEL_TYPE \
+--tokenizer_name $TOKENIZER_NAME \
+--input_file ${INPUT_JSON} \
+--split $SPLIT \
+--do_lower_case \
 --model_path ${MODEL_PATH} \
---max_seq_length 512 --max_tgt_length 48 --batch_size 256 \
---beam_size 1 --length_penalty 0 --forbid_duplicate_ngrams --mode s2s \
+--max_seq_length 512 \
+--max_tgt_length 48 \
+--batch_size 256 \
+--beam_size 1 \
+--length_penalty 0 \
+--forbid_duplicate_ngrams \
+--mode s2s \
 --forbid_ignore_word ";" \
 --output_file ${MODEL_DIR}/${CHECKPOINT}.${DATASET_NAME}.${SPLIT} \
 --workers 60 \
