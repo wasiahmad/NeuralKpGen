@@ -1,4 +1,4 @@
-# NeuralKpGen
+# Sequence-to-sequence learning for Keyphrase Generation
 
 Implementation of the recurrent neural networks (RNNs) and Transformer based neural keyphrase generation methods. `requirements.txt` includes a subset of all the possible required packages.
 

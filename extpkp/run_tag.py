@@ -131,11 +131,16 @@ def train(args, train_dataset, model, tokenizer, labels, pad_token_label_id):
         for step, batch in enumerate(epoch_iterator):
             model.train()
             batch = tuple(t.to(args.device) for t in batch if t is not None)
-            inputs = {"input_ids": batch[0],
-                      "attention_mask": batch[1],
-                      "labels": batch[3]}
-            # XLM and RoBERTa don"t use segment_ids
-            inputs["token_type_ids"] = batch[2] if args.model_type in ["bert", "xlnet"] else None
+            inputs = {
+                "input_ids": batch[0],
+                "attention_mask": batch[1],
+                "labels": batch[3]
+            }
+            if args.model_type == 'bart':
+                inputs["decoder_input_ids"] = batch[0]
+            else:
+                # XLM and RoBERTa don"t use segment_ids
+                inputs["token_type_ids"] = batch[2] if args.model_type in ["bert", "xlnet"] else None
 
             outputs = model(**inputs)
             loss = outputs[0]
@@ -255,11 +260,16 @@ def evaluate(args, model, tokenizer, labels, pad_token_label_id, mode, prefix=""
         batch = tuple(t.to(args.device) for t in batch)
 
         with torch.no_grad():
-            inputs = {"input_ids": batch[0],
-                      "attention_mask": batch[1],
-                      "labels": batch[3]}
-            # XLM and RoBERTa don"t use segment_ids
-            inputs["token_type_ids"] = batch[2] if args.model_type in ["bert", "xlnet"] else None
+            inputs = {
+                "input_ids": batch[0],
+                "attention_mask": batch[1],
+                "labels": batch[3]
+            }
+            if args.model_type == 'bart':
+                inputs["decoder_input_ids"] = batch[0]
+            else:
+                # XLM and RoBERTa don"t use segment_ids
+                inputs["token_type_ids"] = batch[2] if args.model_type in ["bert", "xlnet"] else None
 
             outputs = model(**inputs)
             tmp_eval_loss, logits = outputs[:2]
