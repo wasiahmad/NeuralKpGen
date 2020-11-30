@@ -17,7 +17,7 @@ from prettytable import PrettyTable
 stemmer = PorterStemmer()
 
 INVALIDATE_UNK = True
-DISABLE_EXTRA_ONE_WORD_FILTER = False
+DISABLE_EXTRA_ONE_WORD_FILTER = True
 TITLE_SEP = '<sep>'
 UNK_WORD = '<unk>'
 KP_SEP = ';'
