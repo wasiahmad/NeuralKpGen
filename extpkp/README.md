@@ -10,7 +10,7 @@ We provide an example as follows.
 #Input
 Real time data aggregation in contention based wireless sensor networks .
 
-#Present Keyphrases
+#Present_Keyphrases
 data aggregation; wireless sensor networks
 
 #Output
@@ -25,14 +25,13 @@ data aggregation; wireless sensor networks
 - RoBERTa [[https://arxiv.org/pdf/1907.11692.pdf](https://arxiv.org/pdf/1907.11692.pdf)]
 - UniLM [[https://arxiv.org/pdf/1905.03197.pdf](https://arxiv.org/pdf/1905.03197.pdf)]
 - MiniLM [[https://arxiv.org/pdf/2002.10957.pdf](https://arxiv.org/pdf/2002.10957.pdf)]
-- BART [[https://arxiv.org/pdf/1910.13461.pdf]](https://arxiv.org/pdf/1910.13461.pdf)
+- BART [[https://arxiv.org/pdf/1910.13461.pdf](https://arxiv.org/pdf/1910.13461.pdf)]
 
 ### Prerequisite
 
 - Make sure you have the [required packages](https://github.com/wasiahmad/NeuralKpGen/blob/master/requirements.txt) installed.
-- Then run `cd data && bash run.sh`.
-
-Once the datasets are processed, there will be a directory named `processed` inside the `data` directory.
+- Then run `cd data && bash run.sh`. Once the datasets are processed, there will be a directory named `processed` inside the `data` directory.
+- Run `cd unilm && bash download.sh` to download the `UniLM` model and do necessary conversion to perform training and evaluation.
 
 
 ### Model Training and Evaluation
