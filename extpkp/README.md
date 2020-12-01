@@ -2,7 +2,9 @@
 
 ## Introduction
 
-Keyphrases are of two types, present and absent. While present keyphrases exactly appear as a contiguous text span in the input document, absent keyphrases do not. Therefore, we can frame the present keyphrase extraction as a sequence tagging task. We provide an example as follows.
+Keyphrases are of two types, present and absent. While present keyphrases exactly appear as a contiguous text span in the input document, absent keyphrases do not. Therefore, we can frame the present keyphrase extraction as a sequence tagging task. 
+
+We provide an example as follows.
 
 ```
 #Input
