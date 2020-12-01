@@ -30,7 +30,7 @@ data aggregation; wireless sensor networks
 ### Prerequisite
 
 - Make sure you have the [required packages](https://github.com/wasiahmad/NeuralKpGen/blob/master/requirements.txt) installed.
-- Then run `cd data && bash run.sh`. Once the datasets are processed, there will be a directory named `processed` inside the `data` directory.
+- Run `cd data && bash run.sh`. After finishing, there will be a directory named `processed` inside the `data` directory.
 - Run `cd unilm && bash download.sh` to download the `UniLM` model and do necessary conversion to perform training and evaluation.
 
 
