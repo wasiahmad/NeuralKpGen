@@ -63,7 +63,3 @@ bash run.sh 0,1,2,3 scibert
 - The predictions are stored in `kp20k-{MODEL_NAME}/{dataset_name}_predictions.txt` file.
 - The official evaluation results are written in `results_log_{dataset_name}.txt` file.
 
-
-## Reference
-
-- [https://github.com/pytorch/fairseq/blob/master/examples/bart/README.summarization.md](https://github.com/pytorch/fairseq/blob/master/examples/bart/README.summarization.md)
