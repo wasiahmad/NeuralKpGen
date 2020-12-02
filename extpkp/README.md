@@ -1,4 +1,4 @@
-# Sequence Tagging approach for Present Keyphrase Extraction
+# Present Keyphrase Extraction via Sequence Tagging
 
 ## Introduction
 
@@ -11,7 +11,7 @@ We provide an example as follows.
 Real time data aggregation in contention based wireless sensor networks .
 
 #Present_Keyphrases
-data aggregation; wireless sensor networks
+data aggregation; sensor networks
 
 #Output
 "O", "O", "B", "I", "O", "O", "O", "O", "B", "I", "O"
