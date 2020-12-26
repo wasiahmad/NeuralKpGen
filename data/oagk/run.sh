@@ -71,5 +71,5 @@ fi
 }
 
 download_oagk
-#download_oagkx
+download_oagkx
 prepare BertTokenizer processed

@@ -14,9 +14,9 @@ MAX_TOKENS=4096
 UPDATE_FREQ=4
 ARCH=bart_base # bart_large
 BART_PATH=bart.base/model.pt # bart.large/model.pt
+SAVE_DIR=${DATASET}_checkpoints
 
 fairseq-train ${SRCDIR}/${DATASET}-bin/ \
---save-dir ${DATASET}_checkpoints \
 --restore-file $BART_PATH \
 --max-tokens $MAX_TOKENS \
 --task translation \
@@ -38,7 +38,8 @@ fairseq-train ${SRCDIR}/${DATASET}-bin/ \
 --max-update $TOTAL_NUM_UPDATES --warmup-updates $WARMUP_UPDATES \
 --update-freq $UPDATE_FREQ \
 --skip-invalid-size-inputs-valid-test \
---find-unused-parameters --ddp-backend=no_c10d;
+--find-unused-parameters --ddp-backend=no_c10d \
+--save-dir $SAVE_DIR 2>&1 | tee $SAVE_DIR/output.log;
 
 }
 
