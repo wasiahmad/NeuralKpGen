@@ -44,7 +44,7 @@ def decode(args):
                                                    no_repeat_ngram_size=args.no_repeat_ngram_size)
 
                 for hypothesis in hypotheses_batch:
-                    fout.write(hypothesis + '\n')
+                    fout.write(hypothesis.strip() + '\n')
                     fout.flush()
                 slines = []
 
@@ -59,7 +59,7 @@ def decode(args):
                                            min_len=args.min_len,
                                            no_repeat_ngram_size=args.no_repeat_ngram_size)
             for hypothesis in hypotheses_batch:
-                fout.write(hypothesis + '\n')
+                fout.write(hypothesis.strip() + '\n')
                 fout.flush()
 
 
