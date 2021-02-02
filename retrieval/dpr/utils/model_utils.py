@@ -18,15 +18,19 @@ from torch.serialization import default_restore_location
 
 logger = logging.getLogger()
 
-CheckpointState = collections.namedtuple("CheckpointState",
-                                         ['model_dict', 'optimizer_dict', 'scheduler_dict', 'offset', 'epoch',
-                                          'encoder_params'])
+CheckpointState = collections.namedtuple(
+    "CheckpointState",
+    ['model_dict', 'optimizer_dict', 'scheduler_dict', 'offset', 'epoch',
+     'encoder_params']
+)
 
 
-def setup_for_distributed_mode(model: nn.Module, optimizer: torch.optim.Optimizer, device: object, n_gpu: int = 1,
-                               local_rank: int = -1,
-                               fp16: bool = False,
-                               fp16_opt_level: str = "O1") -> (nn.Module, torch.optim.Optimizer):
+def setup_for_distributed_mode(
+        model: nn.Module, optimizer: torch.optim.Optimizer, device: object, n_gpu: int = 1,
+        local_rank: int = -1,
+        fp16: bool = False,
+        fp16_opt_level: str = "O1"
+) -> (nn.Module, torch.optim.Optimizer):
     model.to(device)
     if fp16:
         try:
@@ -42,9 +46,11 @@ def setup_for_distributed_mode(model: nn.Module, optimizer: torch.optim.Optimize
         model = torch.nn.DataParallel(model)
 
     if local_rank != -1:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
-                                                          output_device=local_rank,
-                                                          find_unused_parameters=True)
+        model = torch.nn.parallel.DistributedDataParallel(
+            model, device_ids=[local_rank],
+            output_device=local_rank,
+            find_unused_parameters=True
+        )
     return model, optimizer
 
 

@@ -26,9 +26,11 @@ logger = logging.getLogger(__name__)
 QAMatchStats = collections.namedtuple('QAMatchStats', ['top_k_hits', 'questions_doc_hits'])
 
 
-def calculate_matches(all_docs: Dict[object, Tuple[str, str]], answers: List[List[str]],
-                      closest_docs: List[Tuple[List[object], List[float]]], workers_num: int,
-                      match_type: str) -> QAMatchStats:
+def calculate_matches(
+        all_docs: Dict[object, Tuple[str, str]], answers: List[List[str]],
+        closest_docs: List[Tuple[List[object], List[float]]], workers_num: int,
+        match_type: str
+) -> QAMatchStats:
     """
     Evaluates answers presence in the set of documents. This function is supposed to be used with a large collection of
     documents and results. It internally forks multiple sub-processes for evaluation and then merges results

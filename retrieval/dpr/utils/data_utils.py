@@ -33,7 +33,10 @@ def read_serialized_data_from_files(paths: List[str]) -> List:
     return results
 
 
-def read_data_from_json_files(paths: List[str], upsample_rates: List = None) -> List:
+def read_data_from_json_files(
+        paths: List[str], upsample_rates: List = None, TopCodeR=True, text_to_code=True,
+        concode_with_code=False, dataset="CONCODE"
+) -> List:
     results = []
     if upsample_rates is None:
         upsample_rates = [1] * len(paths)
@@ -41,13 +44,98 @@ def read_data_from_json_files(paths: List[str], upsample_rates: List = None) -> 
     assert len(upsample_rates) == len(paths), 'up-sample rates parameter doesn\'t match input files amount'
 
     for i, path in enumerate(paths):
-        with open(path, 'r', encoding="utf-8") as f:
-            logger.info('Reading file %s' % path)
-            data = json.load(f)
-            upsample_factor = int(upsample_rates[i])
-            data = data * upsample_factor
-            results.extend(data)
-            logger.info('Aggregated data size: {}'.format(len(results)))
+        if not TopCodeR:
+            with open(path, 'r', encoding="utf-8") as f:
+                logger.info('Reading file %s' % path)
+                data = json.load(f)
+                upsample_factor = int(upsample_rates[i])
+                data = data * upsample_factor
+                results.extend(data)
+                logger.info('Aggregated data size: {}'.format(len(results)))
+        else:
+            if dataset == "KP20k":
+                logger.info("Parsing KP20k dataset")
+                with open(path) as reader:
+                    for row in reader:
+                        line = json.loads(row)
+                        q = line["keyword"]
+                        text = line["title"] + ' </s> ' + line["abstract"]
+                        ctx = {"text": text, "title": None, "answers": [text]}
+                        object = {"question": q, "hard_negative_ctxs": [], "negative_ctxs": [],
+                                  "positive_ctxs": [ctx], "label": "1"}
+                        results.append(object)
+                        if len(results) < 5:
+                            logger.info("----------------------")
+                            logger.info("Source/q: %s", q)
+                            logger.info("Traget/context: %s", ctx["text"])
+                            logger.info("----------------------")
+
+            elif path.endswith("txt"):
+                with open(path, "r", encoding='utf-8') as f:
+                    logger.info('Reading file %s' % path)
+                    for line in f.readlines():
+                        line = line.strip().split('<CODESPLIT>')
+                        if len(line) != 5:
+                            continue
+                        label = line[0]
+
+                        source_str = 3
+                        target_str = 4
+                        if not text_to_code:
+                            source_str = 4
+                            target_str = 3
+                        # ctx = {"text":line[4], "title":None, "answers":[line[4]]}
+                        # if label=="0": object = {"question": line[3], "hard_negative_ctxs": [ctx], "negative_ctxs":[], "positive_ctxs":[], "label": label}
+                        # else: object = {"question": line[3], "positive_ctxs":[ctx], "hard_negative_ctxs": [], "negative_ctxs":[], "label": label}
+                        # results.append(object)
+
+                        ctx = {"text": line[target_str], "title": None, "answers": [line[target_str]]}
+                        if label == "0":
+                            object = {"question": line[source_str], "hard_negative_ctxs": [ctx], "negative_ctxs": [],
+                                      "positive_ctxs": [], "label": label}
+                        else:
+                            object = {"question": line[source_str], "positive_ctxs": [ctx], "hard_negative_ctxs": [],
+                                      "negative_ctxs": [], "label": label}
+                        results.append(object)
+
+            elif path.endswith("jsonl"):
+                with open(path, "r", encoding='utf-8') as f:
+                    logger.info('Reading file %s' % path)
+                    for line in f.readlines():
+                        line = json.loads(line)
+                        label = str("1")
+                        source_str = "docstring"
+                        target_str = "function"
+                        if not text_to_code:
+                            source_str = "function"
+                            target_str = "docstring"
+
+                        try:
+                            ctx = {"text": line[target_str], "title": None, "answers": [line[target_str]]}
+                            if label == "0":
+                                object = {"question": line[source_str], "hard_negative_ctxs": [ctx],
+                                          "negative_ctxs": [], "positive_ctxs": [], "label": label}
+                            else:
+                                object = {"question": line[source_str], "positive_ctxs": [ctx],
+                                          "hard_negative_ctxs": [], "negative_ctxs": [], "label": label}
+                            results.append(object)
+                        except:
+                            if "function" in source_str:
+                                source_str = "code"
+                            else:
+                                target_str = "code"
+                            try:
+                                ctx = {"text": line[target_str], "title": None, "answers": [line[target_str]]}
+                                if label == "0":
+                                    object = {"question": line[source_str], "hard_negative_ctxs": [ctx],
+                                              "negative_ctxs": [], "positive_ctxs": [], "label": label}
+                                else:
+                                    object = {"question": line[source_str], "positive_ctxs": [ctx],
+                                              "hard_negative_ctxs": [], "negative_ctxs": [], "label": label}
+                                results.append(object)
+                            except:
+                                logger.info("could  not parse: %s ", line)
+    logger.info('Aggregated data size: {}'.format(len(results)))
     return results
 
 
@@ -59,6 +147,7 @@ class ShardedDataIterator(object):
     It fills the extra sample by just taking first samples in a shard.
     It can also optionally enforce identical batch size for all iterations (might be useful for DP mode).
     """
+
     def __init__(self, data: list, shard_id: int = 0, num_shards: int = 1, batch_size: int = 1, shuffle=True,
                  shuffle_seed: int = 0, offset: int = 0,
                  strict_batch_size: bool = False

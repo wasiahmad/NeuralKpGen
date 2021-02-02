@@ -95,14 +95,15 @@ def compute_loss(start_positions, end_positions, answer_mask, start_logits, end_
     return span_loss + switch_loss
 
 
-def create_reader_input(pad_token_id: int,
-                        samples: List[ReaderSample],
-                        passages_per_question: int,
-                        max_length: int,
-                        max_n_answers: int,
-                        is_train: bool,
-                        shuffle: bool,
-                        ) -> ReaderBatch:
+def create_reader_input(
+        pad_token_id: int,
+        samples: List[ReaderSample],
+        passages_per_question: int,
+        max_length: int,
+        max_n_answers: int,
+        is_train: bool,
+        shuffle: bool,
+) -> ReaderBatch:
     """
     Creates a reader batch instance out of a list of ReaderSample-s
     :param pad_token_id: id of the padding token
@@ -124,14 +125,16 @@ def create_reader_input(pad_token_id: int,
         positive_ctxs = sample.positive_passages
         negative_ctxs = sample.negative_passages if is_train else sample.passages
 
-        sample_tensors = _create_question_passages_tensors(positive_ctxs,
-                                                           negative_ctxs,
-                                                           passages_per_question,
-                                                           empty_sequence,
-                                                           max_n_answers,
-                                                           pad_token_id,
-                                                           is_train,
-                                                           is_random=shuffle)
+        sample_tensors = _create_question_passages_tensors(
+            positive_ctxs,
+            negative_ctxs,
+            passages_per_question,
+            empty_sequence,
+            max_n_answers,
+            pad_token_id,
+            is_train,
+            is_random=shuffle
+        )
         if not sample_tensors:
             logger.warning('No valid passages combination for question=%s ', sample.question)
             continue
@@ -181,12 +184,14 @@ def _get_positive_idx(positives: List[ReaderPassage], max_len: int, is_random: b
     return positive_idx
 
 
-def _create_question_passages_tensors(positives: List[ReaderPassage], negatives: List[ReaderPassage], total_size: int,
-                                      empty_ids: T,
-                                      max_n_answers: int,
-                                      pad_token_id: int,
-                                      is_train: bool,
-                                      is_random: bool = True):
+def _create_question_passages_tensors(
+        positives: List[ReaderPassage], negatives: List[ReaderPassage], total_size: int,
+        empty_ids: T,
+        max_n_answers: int,
+        pad_token_id: int,
+        is_train: bool,
+        is_random: bool = True
+):
     max_len = empty_ids.size(0)
     if is_train:
         # select just one positive

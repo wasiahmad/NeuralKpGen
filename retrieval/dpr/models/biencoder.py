@@ -61,7 +61,7 @@ class BiEncoder(nn.Module):
 
     @staticmethod
     def get_representation(sub_model: nn.Module, ids: T, segments: T, attn_mask: T, fix_encoder: bool = False) -> (
-    T, T, T):
+            T, T, T):
         sequence_output = None
         pooled_output = None
         hidden_states = None
@@ -89,15 +89,16 @@ class BiEncoder(nn.Module):
         return q_pooled_out, ctx_pooled_out
 
     @classmethod
-    def create_biencoder_input(cls,
-                               samples: List,
-                               tensorizer: Tensorizer,
-                               insert_title: bool,
-                               num_hard_negatives: int = 0,
-                               num_other_negatives: int = 0,
-                               shuffle: bool = True,
-                               shuffle_positives: bool = False,
-                               ) -> BiEncoderBatch:
+    def create_biencoder_input(
+            cls,
+            samples: List,
+            tensorizer: Tensorizer,
+            insert_title: bool,
+            num_hard_negatives: int = 0,
+            num_other_negatives: int = 0,
+            shuffle: bool = True,
+            shuffle_positives: bool = False,
+    ) -> BiEncoderBatch:
         """
         Creates a batch of the biencoder training tuple.
         :param samples: list of data items (from json) to create the batch for

@@ -82,20 +82,26 @@ class ReaderSample(object):
             passage.on_deserialize()
 
 
-SpanPrediction = collections.namedtuple('SpanPrediction',
-                                        ['prediction_text', 'span_score', 'relevance_score', 'passage_index',
-                                         'passage_token_ids'])
+SpanPrediction = collections.namedtuple(
+    'SpanPrediction',
+    ['prediction_text', 'span_score', 'relevance_score', 'passage_index',
+     'passage_token_ids']
+)
 
 # configuration for reader model passage selection
-ReaderPreprocessingCfg = collections.namedtuple('ReaderPreprocessingCfg',
-                                                ['use_tailing_sep', 'skip_no_positves', 'include_gold_passage',
-                                                 'gold_page_only_positives', 'max_positives', 'max_negatives',
-                                                 'min_negatives', 'max_retriever_passages'])
+ReaderPreprocessingCfg = collections.namedtuple(
+    'ReaderPreprocessingCfg',
+    ['use_tailing_sep', 'skip_no_positves', 'include_gold_passage',
+     'gold_page_only_positives', 'max_positives', 'max_negatives',
+     'min_negatives', 'max_retriever_passages']
+)
 
-DEFAULT_PREPROCESSING_CFG_TRAIN = ReaderPreprocessingCfg(use_tailing_sep=False, skip_no_positves=True,
-                                                         include_gold_passage=False, gold_page_only_positives=True,
-                                                         max_positives=20, max_negatives=50, min_negatives=150,
-                                                         max_retriever_passages=200)
+DEFAULT_PREPROCESSING_CFG_TRAIN = ReaderPreprocessingCfg(
+    use_tailing_sep=False, skip_no_positves=True,
+    include_gold_passage=False, gold_page_only_positives=True,
+    max_positives=20, max_negatives=50, min_negatives=150,
+    max_retriever_passages=200
+)
 
 DEFAULT_EVAL_PASSAGES = 100
 
@@ -173,10 +179,12 @@ def preprocess_retriever_data(samples: List[Dict], gold_info_file: Optional[str]
     logger.info('positive passages from gold samples: %d', positives_from_gold)
 
 
-def convert_retriever_results(is_train_set: bool, input_file: str, out_file_prefix: str,
-                              gold_passages_file: str,
-                              tensorizer: Tensorizer,
-                              num_workers: int = 8) -> List[str]:
+def convert_retriever_results(
+        is_train_set: bool, input_file: str, out_file_prefix: str,
+        gold_passages_file: str,
+        tensorizer: Tensorizer,
+        num_workers: int = 8
+) -> List[str]:
     """
     Converts the file with dense retriever(or any compatible file format) results into the reader input data and
     serializes them into a set of files.
@@ -215,8 +223,16 @@ def convert_retriever_results(is_train_set: bool, input_file: str, out_file_pref
     return serialized_files
 
 
-def get_best_spans(tensorizer: Tensorizer, start_logits: List, end_logits: List, ctx_ids: List, max_answer_length: int,
-                   passage_idx: int, relevance_score: float, top_spans: int = 1) -> List[SpanPrediction]:
+def get_best_spans(
+        tensorizer: Tensorizer,
+        start_logits: List,
+        end_logits: List,
+        ctx_ids: List,
+        max_answer_length: int,
+        passage_idx: int,
+        relevance_score: float,
+        top_spans: int = 1
+) -> List[SpanPrediction]:
     """
     Finds the best answer span for the extractive Q&A model
     """
@@ -253,17 +269,18 @@ def get_best_spans(tensorizer: Tensorizer, start_logits: List, end_logits: List,
     return best_spans
 
 
-def _select_reader_passages(sample: Dict,
-                            question: str,
-                            tensorizer: Tensorizer, gold_passage_map: Dict[str, ReaderPassage],
-                            gold_page_only_positives: bool,
-                            max_positives: int,
-                            max1_negatives: int,
-                            max2_negatives: int,
-                            max_retriever_passages: int,
-                            include_gold_passage: bool,
-                            is_train_set: bool
-                            ) -> Tuple[List[ReaderPassage], List[ReaderPassage]]:
+def _select_reader_passages(
+        sample: Dict,
+        question: str,
+        tensorizer: Tensorizer, gold_passage_map: Dict[str, ReaderPassage],
+        gold_page_only_positives: bool,
+        max_positives: int,
+        max1_negatives: int,
+        max2_negatives: int,
+        max_retriever_passages: int,
+        include_gold_passage: bool,
+        is_train_set: bool
+) -> Tuple[List[ReaderPassage], List[ReaderPassage]]:
     answers = sample['answers']
 
     ctxs = [ReaderPassage(**ctx) for ctx in sample['ctxs']][0:max_retriever_passages]
@@ -384,7 +401,9 @@ def _is_from_gold_wiki_page(gold_passage_map: Dict[str, ReaderPassage], passage_
     return False
 
 
-def _extend_span_to_full_words(tensorizer: Tensorizer, tokens: List[int], span: Tuple[int, int]) -> Tuple[int, int]:
+def _extend_span_to_full_words(
+        tensorizer: Tensorizer, tokens: List[int], span: Tuple[int, int]
+) -> Tuple[int, int]:
     start_index, end_index = span
     max_len = len(tokens)
     while start_index > 0 and tensorizer.is_sub_word_id(tokens[start_index]):
@@ -396,9 +415,11 @@ def _extend_span_to_full_words(tensorizer: Tensorizer, tokens: List[int], span: 
     return start_index, end_index
 
 
-def _preprocess_reader_samples_chunk(samples: List, out_file_prefix: str, gold_passages_file: str,
-                                     tensorizer: Tensorizer,
-                                     is_train_set: bool) -> str:
+def _preprocess_reader_samples_chunk(
+        samples: List, out_file_prefix: str, gold_passages_file: str,
+        tensorizer: Tensorizer,
+        is_train_set: bool
+) -> str:
     chunk_id, samples = samples
     logger.info('Start batch %d', len(samples))
     iterator = preprocess_retriever_data(

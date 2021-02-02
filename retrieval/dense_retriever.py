@@ -45,7 +45,14 @@ class DenseRetriever(object):
     """
     Does passage retrieving over the provided index and question encoder
     """
-    def __init__(self, question_encoder: nn.Module, batch_size: int, tensorizer: Tensorizer, index: DenseIndexer):
+
+    def __init__(
+            self,
+            question_encoder: nn.Module,
+            batch_size: int,
+            tensorizer: Tensorizer,
+            index: DenseIndexer
+    ):
         self.question_encoder = question_encoder
         self.batch_size = batch_size
         self.tensorizer = tensorizer
@@ -81,7 +88,9 @@ class DenseRetriever(object):
         assert query_tensor.size(0) == len(questions)
         return query_tensor
 
-    def get_top_docs(self, query_vectors: np.array, top_docs: int = 100) -> List[Tuple[List[object], List[float]]]:
+    def get_top_docs(
+            self, query_vectors: np.array, top_docs: int = 100
+    ) -> List[Tuple[List[object], List[float]]]:
         """
         Does the retrieval of the best matching passages given the query vectors batch
         :param query_vectors:
@@ -103,9 +112,12 @@ def parse_qa_csv_file(location) -> Iterator[Tuple[str, List[str]]]:
             yield question, answers
 
 
-def validate(passages: Dict[object, Tuple[str, str]], answers: List[List[str]],
-             result_ctx_ids: List[Tuple[List[object], List[float]]],
-             workers_num: int, match_type: str) -> List[List[bool]]:
+def validate(
+        passages: Dict[object, Tuple[str, str]],
+        answers: List[List[str]],
+        result_ctx_ids: List[Tuple[List[object], List[float]]],
+        workers_num: int, match_type: str
+) -> List[List[bool]]:
     match_stats = calculate_matches(passages, answers, result_ctx_ids, workers_num, match_type)
     top_k_hits = match_stats.top_k_hits
 
@@ -135,10 +147,11 @@ def load_passages(ctx_file: str) -> Dict[object, Tuple[str, str]]:
     return docs
 
 
-def save_results(passages: Dict[object, Tuple[str, str]], questions: List[str], answers: List[List[str]],
-                 top_passages_and_scores: List[Tuple[List[object], List[float]]], per_question_hits: List[List[bool]],
-                 out_file: str
-                 ):
+def save_results(
+        passages: Dict[object, Tuple[str, str]], questions: List[str], answers: List[List[str]],
+        top_passages_and_scores: List[Tuple[List[object], List[float]]], per_question_hits: List[List[bool]],
+        out_file: str
+):
     # join passages text with the result ids, their questions and assigning has|no answer labels
     merged_data = []
     assert len(per_question_hits) == len(questions) == len(answers)
@@ -184,12 +197,10 @@ def main(args):
     set_encoder_params_from_state(saved_state.encoder_params, args)
 
     tensorizer, encoder, _ = init_biencoder_components(args.encoder_model_type, args, inference_only=True)
-
     encoder = encoder.question_model
-
-    encoder, _ = setup_for_distributed_mode(encoder, None, args.device, args.n_gpu,
-                                            args.local_rank,
-                                            args.fp16)
+    encoder, _ = setup_for_distributed_mode(
+        encoder, None, args.device, args.n_gpu, args.local_rank, args.fp16
+    )
     encoder.eval()
 
     # load weights from the model file
@@ -197,8 +208,10 @@ def main(args):
     logger.info('Loading saved model state ...')
 
     prefix_len = len('question_model.')
-    question_encoder_state = {key[prefix_len:]: value for (key, value) in saved_state.model_dict.items() if
-                              key.startswith('question_model.')}
+    question_encoder_state = {
+        key[prefix_len:]: value for (key, value) in saved_state.model_dict.items() if
+        key.startswith('question_model.')
+    }
     model_to_load.load_state_dict(question_encoder_state)
     vector_size = model_to_load.get_out_size()
     logger.info('Encoder vector_size=%d', vector_size)
@@ -209,7 +222,6 @@ def main(args):
         index = DenseFlatIndexer(vector_size, args.index_buffer)
 
     retriever = DenseRetriever(encoder, args.batch_size, tensorizer, index)
-
 
     # index all passages
     ctx_files_pattern = args.encoded_ctx_file
@@ -236,7 +248,6 @@ def main(args):
 
     # get top k results
     top_ids_and_scores = retriever.get_top_docs(questions_tensor.numpy(), args.n_docs)
-
     all_passages = load_passages(args.ctx_file)
 
     if len(all_passages) == 0:
@@ -246,7 +257,10 @@ def main(args):
                                   args.match)
 
     if args.out_file:
-        save_results(all_passages, questions, question_answers, top_ids_and_scores, questions_doc_hits, args.out_file)
+        save_results(
+            all_passages, questions, question_answers,
+            top_ids_and_scores, questions_doc_hits, args.out_file
+        )
 
 
 if __name__ == '__main__':
