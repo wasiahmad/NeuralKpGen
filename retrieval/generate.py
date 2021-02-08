@@ -22,11 +22,12 @@ import numpy as np
 import torch
 from torch import nn
 
-from dpr.models import init_biencoder_components
-from dpr.options import add_encoder_params, setup_args_gpu, print_args, set_encoder_params_from_state, \
+from retrieval.dpr.models import init_biencoder_components
+from retrieval.dpr.options import add_encoder_params, setup_args_gpu, print_args, set_encoder_params_from_state, \
     add_tokenizer_params, add_cuda_params
-from dpr.utils.data_utils import Tensorizer
-from dpr.utils.model_utils import setup_for_distributed_mode, get_model_obj, load_states_from_checkpoint, move_to_device
+from retrieval.dpr.utils.data_utils import Tensorizer
+from retrieval.dpr.utils.model_utils import setup_for_distributed_mode, get_model_obj, load_states_from_checkpoint, \
+    move_to_device
 import json
 
 logger = logging.getLogger()
@@ -86,10 +87,9 @@ def main(args):
 
     encoder = encoder.ctx_model
 
-    encoder, _ = setup_for_distributed_mode(encoder, None, args.device, args.n_gpu,
-                                            args.local_rank,
-                                            args.fp16,
-                                            args.fp16_opt_level)
+    encoder, _ = setup_for_distributed_mode(
+        encoder, None, args.device, args.n_gpu, args.local_rank, args.fp16, args.fp16_opt_level
+    )
     encoder.eval()
 
     # load weights from the model file

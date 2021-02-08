@@ -25,9 +25,10 @@ from dpr.utils.data_utils import normalize_question
 
 logger = logging.getLogger(__name__)
 
-BiEncoderBatch = collections.namedtuple('BiENcoderInput',
-                                        ['question_ids', 'question_segments', 'context_ids', 'ctx_segments',
-                                         'is_positive', 'hard_negatives'])
+BiEncoderBatch = collections.namedtuple(
+    'BiENcoderInput',
+    ['question_ids', 'question_segments', 'context_ids', 'ctx_segments', 'is_positive', 'hard_negatives']
+)
 
 
 def dot_product_scores(q_vectors: T, ctx_vectors: T) -> T:
@@ -78,13 +79,22 @@ class BiEncoder(nn.Module):
 
         return sequence_output, pooled_output, hidden_states
 
-    def forward(self, question_ids: T, question_segments: T, question_attn_mask: T, context_ids: T, ctx_segments: T,
-                ctx_attn_mask: T) -> Tuple[T, T]:
+    def forward(
+            self,
+            question_ids: T,
+            question_segments: T,
+            question_attn_mask: T,
+            context_ids: T,
+            ctx_segments: T,
+            ctx_attn_mask: T
+    ) -> Tuple[T, T]:
 
-        _q_seq, q_pooled_out, _q_hidden = self.get_representation(self.question_model, question_ids, question_segments,
-                                                                  question_attn_mask, self.fix_q_encoder)
-        _ctx_seq, ctx_pooled_out, _ctx_hidden = self.get_representation(self.ctx_model, context_ids, ctx_segments,
-                                                                        ctx_attn_mask, self.fix_ctx_encoder)
+        _q_seq, q_pooled_out, _q_hidden = self.get_representation(
+            self.question_model, question_ids, question_segments, question_attn_mask, self.fix_q_encoder
+        )
+        _ctx_seq, ctx_pooled_out, _ctx_hidden = self.get_representation(
+            self.ctx_model, context_ids, ctx_segments, ctx_attn_mask, self.fix_ctx_encoder
+        )
 
         return q_pooled_out, ctx_pooled_out
 
@@ -141,15 +151,17 @@ class BiEncoder(nn.Module):
 
             current_ctxs_len = len(ctx_tensors)
 
-            sample_ctxs_tensors = [tensorizer.text_to_tensor(ctx['text'], title=ctx['title'] if insert_title else None)
-                                   for
-                                   ctx in all_ctxs]
+            sample_ctxs_tensors = [
+                tensorizer.text_to_tensor(ctx['text'], title=ctx['title'] if insert_title else None)
+                for ctx in all_ctxs
+            ]
 
             ctx_tensors.extend(sample_ctxs_tensors)
             positive_ctx_indices.append(current_ctxs_len)
             hard_neg_ctx_indices.append(
                 [i for i in
-                 range(current_ctxs_len + hard_negatives_start_idx, current_ctxs_len + hard_negatives_end_idx)])
+                 range(current_ctxs_len + hard_negatives_start_idx, current_ctxs_len + hard_negatives_end_idx)]
+            )
 
             question_tensors.append(tensorizer.text_to_tensor(question))
 
@@ -159,14 +171,25 @@ class BiEncoder(nn.Module):
         ctx_segments = torch.zeros_like(ctxs_tensor)
         question_segments = torch.zeros_like(questions_tensor)
 
-        return BiEncoderBatch(questions_tensor, question_segments, ctxs_tensor, ctx_segments, positive_ctx_indices,
-                              hard_neg_ctx_indices)
+        return BiEncoderBatch(
+            questions_tensor,
+            question_segments,
+            ctxs_tensor,
+            ctx_segments,
+            positive_ctx_indices,
+            hard_neg_ctx_indices
+        )
 
 
 class BiEncoderNllLoss(object):
 
-    def calc(self, q_vectors: T, ctx_vectors: T, positive_idx_per_question: list,
-             hard_negative_idx_per_question: list = None) -> Tuple[T, int]:
+    def calc(
+            self,
+            q_vectors: T,
+            ctx_vectors: T,
+            positive_idx_per_question: list,
+            hard_negative_idx_per_question: list = None
+    ) -> Tuple[T, int]:
         """
         Computes nll loss for the given lists of question and ctx vectors.
         Note that although hard_negative_idx_per_question in not currently in use, one can use it for the

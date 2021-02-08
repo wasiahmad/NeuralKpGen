@@ -20,27 +20,35 @@ from transformers.optimization import AdamW
 from transformers.tokenization_bert import BertTokenizer
 from transformers.tokenization_roberta import RobertaTokenizer
 
-from dpr.utils.data_utils import Tensorizer
+from retrieval.dpr.utils.data_utils import Tensorizer
 from .biencoder import BiEncoder
-from .reader import Reader
 
 logger = logging.getLogger(__name__)
 
 
 def get_bert_biencoder_components(args, inference_only: bool = False, **kwargs):
     dropout = args.dropout if hasattr(args, 'dropout') else 0.0
-    question_encoder = HFBertEncoder.init_encoder(args.pretrained_model_cfg,
-                                                  projection_dim=args.projection_dim, dropout=dropout, **kwargs)
-    ctx_encoder = HFBertEncoder.init_encoder(args.pretrained_model_cfg,
-                                             projection_dim=args.projection_dim, dropout=dropout, **kwargs)
+    question_encoder = HFBertEncoder.init_encoder(
+        args.pretrained_model_cfg,
+        projection_dim=args.projection_dim,
+        dropout=dropout,
+        **kwargs
+    )
+    ctx_encoder = HFBertEncoder.init_encoder(
+        args.pretrained_model_cfg,
+        projection_dim=args.projection_dim,
+        dropout=dropout,
+        **kwargs
+    )
 
     fix_ctx_encoder = args.fix_ctx_encoder if hasattr(args, 'fix_ctx_encoder') else False
     biencoder = BiEncoder(question_encoder, ctx_encoder, fix_ctx_encoder=fix_ctx_encoder)
 
-    optimizer = get_optimizer(biencoder,
-                              learning_rate=args.learning_rate,
-                              adam_eps=args.adam_eps, weight_decay=args.weight_decay,
-                              ) if not inference_only else None
+    optimizer = get_optimizer(
+        biencoder,
+        learning_rate=args.learning_rate,
+        adam_eps=args.adam_eps, weight_decay=args.weight_decay,
+    ) if not inference_only else None
 
     tensorizer = get_bert_tensorizer(args)
 
@@ -49,16 +57,19 @@ def get_bert_biencoder_components(args, inference_only: bool = False, **kwargs):
 
 def get_bert_reader_components(args, inference_only: bool = False, **kwargs):
     dropout = args.dropout if hasattr(args, 'dropout') else 0.0
-    encoder = HFBertEncoder.init_encoder(args.pretrained_model_cfg,
-                                         projection_dim=args.projection_dim, dropout=dropout)
+    encoder = HFBertEncoder.init_encoder(
+        args.pretrained_model_cfg, projection_dim=args.projection_dim, dropout=dropout
+    )
 
     hidden_size = encoder.config.hidden_size
     reader = Reader(encoder, hidden_size)
 
-    optimizer = get_optimizer(reader,
-                              learning_rate=args.learning_rate,
-                              adam_eps=args.adam_eps, weight_decay=args.weight_decay,
-                              ) if not inference_only else None
+    optimizer = get_optimizer(
+        reader,
+        learning_rate=args.learning_rate,
+        adam_eps=args.adam_eps,
+        weight_decay=args.weight_decay,
+    ) if not inference_only else None
 
     tensorizer = get_bert_tensorizer(args)
     return tensorizer, reader, optimizer
@@ -76,8 +87,12 @@ def get_roberta_tensorizer(args, tokenizer=None):
     return RobertaTensorizer(tokenizer, args.sequence_length)
 
 
-def get_optimizer(model: nn.Module, learning_rate: float = 1e-5, adam_eps: float = 1e-8,
-                  weight_decay: float = 0.0, ) -> torch.optim.Optimizer:
+def get_optimizer(
+        model: nn.Module,
+        learning_rate: float = 1e-5,
+        adam_eps: float = 1e-8,
+        weight_decay: float = 0.0
+) -> torch.optim.Optimizer:
     no_decay = ['bias', 'LayerNorm.weight']
 
     optimizer_grouped_parameters = [
@@ -107,7 +122,9 @@ class HFBertEncoder(BertModel):
         self.init_weights()
 
     @classmethod
-    def init_encoder(cls, cfg_name: str, projection_dim: int = 0, dropout: float = 0.1, **kwargs) -> BertModel:
+    def init_encoder(
+            cls, cfg_name: str, projection_dim: int = 0, dropout: float = 0.1, **kwargs
+    ) -> BertModel:
         cfg = BertConfig.from_pretrained(cfg_name if cfg_name else 'bert-base-uncased')
         if dropout != 0:
             cfg.attention_probs_dropout_prob = dropout
@@ -116,13 +133,14 @@ class HFBertEncoder(BertModel):
 
     def forward(self, input_ids: T, token_type_ids: T, attention_mask: T) -> Tuple[T, ...]:
         if self.config.output_hidden_states:
-            sequence_output, pooled_output, hidden_states = super().forward(input_ids=input_ids,
-                                                                            token_type_ids=token_type_ids,
-                                                                            attention_mask=attention_mask)
+            sequence_output, pooled_output, hidden_states = super().forward(
+                input_ids=input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask
+            )
         else:
             hidden_states = None
-            sequence_output, pooled_output = super().forward(input_ids=input_ids, token_type_ids=token_type_ids,
-                                                             attention_mask=attention_mask)
+            sequence_output, pooled_output = super().forward(
+                input_ids=input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask
+            )
 
         pooled_output = sequence_output[:, 0, :]
         if self.encode_proj:
@@ -146,12 +164,22 @@ class BertTensorizer(Tensorizer):
 
         # tokenizer automatic padding is explicitly disabled since its inconsistent behavior
         if title:
-            token_ids = self.tokenizer.encode(title, text_pair=text, add_special_tokens=add_special_tokens,
-                                              max_length=self.max_length,
-                                              pad_to_max_length=False, truncation=True)
+            token_ids = self.tokenizer.encode(
+                title,
+                text_pair=text,
+                add_special_tokens=add_special_tokens,
+                max_length=self.max_length,
+                pad_to_max_length=False,
+                truncation=True
+            )
         else:
-            token_ids = self.tokenizer.encode(text, add_special_tokens=add_special_tokens, max_length=self.max_length,
-                                              pad_to_max_length=False, truncation=True)
+            token_ids = self.tokenizer.encode(
+                text,
+                add_special_tokens=add_special_tokens,
+                max_length=self.max_length,
+                pad_to_max_length=False,
+                truncation=True
+            )
 
         seq_len = self.max_length
         if self.pad_to_max and len(token_ids) < seq_len:

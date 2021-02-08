@@ -10,7 +10,7 @@ qa_file_suffix = "test"
 FILE = "/home/wasiahmad/workspace/projects/NeuralKpGen/data/scikp/kp20k_separated/KP20k.test.jsonl"
 OUTPUT_ENCODED_FILE = "/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/kp20k_test.*.pkl"
 OUT_FILE = OUTPUT_DIR + str(qa_file_suffix) + "_" + str(top_k) + ".json"
-script = 'dense_retriever.py'
+script = 'retriever.py'
 
 DEVICES = [5]
 CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in DEVICES])

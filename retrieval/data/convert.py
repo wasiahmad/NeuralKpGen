@@ -20,12 +20,12 @@ def main(args):
                 akps = [kp for kp in akps if kp]
                 if len(pkps) == 0 and len(akps) == 0:
                     continue
-                kps = ';'.join(pkps + akps)
                 obj = {
                     'id': idx,
                     'title': title,
                     'abstract': abstract,
-                    'keyword': kps
+                    'present': pkps,
+                    'absent': akps
                 }
                 idx += 1
                 fw.write(json.dumps(obj) + '\n')

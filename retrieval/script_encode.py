@@ -7,7 +7,7 @@ pretrained_model = "bert-base-uncased"
 
 FILE = "/home/wasiahmad/workspace/projects/NeuralKpGen/data/scikp/kp20k_separated/KP20k.test.jsonl"
 OUTPUT_ENCODED_FILE = "/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/kp20k_test"
-script = 'generate_embeddings.py'
+script = 'generate.py'
 
 DEVICES = [1, 2, 3, 4]
 CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in DEVICES])

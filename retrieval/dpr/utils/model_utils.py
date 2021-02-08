@@ -20,8 +20,7 @@ logger = logging.getLogger()
 
 CheckpointState = collections.namedtuple(
     "CheckpointState",
-    ['model_dict', 'optimizer_dict', 'scheduler_dict', 'offset', 'epoch',
-     'encoder_params']
+    ['model_dict', 'optimizer_dict', 'scheduler_dict', 'offset', 'epoch', 'encoder_params']
 )
 
 

@@ -24,14 +24,14 @@ from typing import Tuple
 from torch import nn
 from torch import Tensor as T
 
-from dpr.models import init_biencoder_components
-from dpr.models.biencoder import BiEncoder, BiEncoderNllLoss, BiEncoderBatch
-from dpr.options import add_encoder_params, add_training_params, setup_args_gpu, set_seed, print_args, \
+from retrieval.dpr.models import init_biencoder_components
+from retrieval.dpr.models.biencoder import BiEncoder, BiEncoderNllLoss, BiEncoderBatch
+from retrieval.dpr.options import add_encoder_params, add_training_params, setup_args_gpu, set_seed, print_args, \
     get_encoder_params_state, add_tokenizer_params, set_encoder_params_from_state
-from dpr.utils.data_utils import ShardedDataIterator, read_data_from_json_files, Tensorizer
-from dpr.utils.dist_utils import all_gather_list
-from dpr.utils.model_utils import setup_for_distributed_mode, move_to_device, get_schedule_linear, CheckpointState, \
-    get_model_file, get_model_obj, load_states_from_checkpoint
+from retrieval.dpr.utils.data_utils import ShardedDataIterator, read_data_from_json_files, Tensorizer
+from retrieval.dpr.utils.dist_utils import all_gather_list
+from retrieval.dpr.utils.model_utils import setup_for_distributed_mode, move_to_device, get_schedule_linear, \
+    CheckpointState, get_model_file, get_model_obj, load_states_from_checkpoint
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -65,10 +65,9 @@ class BiEncoderTrainer(object):
 
         tensorizer, model, optimizer = init_biencoder_components(args.encoder_model_type, args)
 
-        model, optimizer = setup_for_distributed_mode(model, optimizer, args.device, args.n_gpu,
-                                                      args.local_rank,
-                                                      args.fp16,
-                                                      args.fp16_opt_level)
+        model, optimizer = setup_for_distributed_mode(
+            model, optimizer, args.device, args.n_gpu, args.local_rank, args.fp16, args.fp16_opt_level
+        )
         self.biencoder = model
         self.optimizer = optimizer
         self.tensorizer = tensorizer
@@ -81,21 +80,32 @@ class BiEncoderTrainer(object):
             self._load_saved_state(saved_state)
 
     def get_data_iterator(
-            self, path: str, batch_size: int, shuffle=True,
+            self,
+            path: str,
+            batch_size: int,
+            shuffle=True,
             shuffle_seed: int = 0,
-            offset: int = 0, upsample_rates: list = None
+            offset: int = 0,
+            upsample_rates: list = None,
+            dataset_name: str = "KP20k",
+            keyword="all",
     ) -> ShardedDataIterator:
+
         data_files = glob.glob(path)
-        data = read_data_from_json_files(data_files, upsample_rates)
+        data = read_data_from_json_files(data_files, upsample_rates, dataset_name, keyword)
 
         # filter those without positive ctx
         data = [r for r in data if len(r['positive_ctxs']) > 0]
         logger.info('Total cleaned data size: {}'.format(len(data)))
 
         return ShardedDataIterator(
-            data, shard_id=self.shard_id,
+            data,
+            shard_id=self.shard_id,
             num_shards=self.distributed_factor,
-            batch_size=batch_size, shuffle=shuffle, shuffle_seed=shuffle_seed, offset=offset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            shuffle_seed=shuffle_seed,
+            offset=offset,
             strict_batch_size=True,  # this is not really necessary, one can probably disable it
         )
 
@@ -106,10 +116,14 @@ class BiEncoderTrainer(object):
             upsample_rates = eval(args.train_files_upsample_rates)
 
         train_iterator = self.get_data_iterator(
-            args.train_file, args.batch_size,
+            args.train_file,
+            args.batch_size,
             shuffle=True,
-            shuffle_seed=args.seed, offset=self.start_batch,
-            upsample_rates=upsample_rates
+            shuffle_seed=args.seed,
+            offset=self.start_batch,
+            upsample_rates=upsample_rates,
+            dataset_name=args.dataset,
+            keyword=args.keyword
         )
 
         logger.info("  Total iterations per epoch=%d", train_iterator.max_iterations)
@@ -161,7 +175,9 @@ class BiEncoderTrainer(object):
         logger.info('NLL validation ...')
         args = self.args
         self.biencoder.eval()
-        data_iterator = self.get_data_iterator(args.dev_file, args.dev_batch_size, shuffle=False)
+        data_iterator = self.get_data_iterator(
+            args.dev_file, args.dev_batch_size, shuffle=False, dataset_name=args.dataset, keyword=args.keyword
+        )
 
         total_loss = 0.0
         start_time = time.time()
@@ -171,9 +187,14 @@ class BiEncoderTrainer(object):
         log_result_step = args.log_batch_step
         batches = 0
         for i, samples_batch in enumerate(data_iterator.iterate_data()):
-            biencoder_input = BiEncoder.create_biencoder_input(samples_batch, self.tensorizer,
-                                                               True,
-                                                               num_hard_negatives, num_other_negatives, shuffle=False)
+            biencoder_input = BiEncoder.create_biencoder_input(
+                samples_batch,
+                self.tensorizer,
+                True,
+                num_hard_negatives,
+                num_other_negatives,
+                shuffle=False
+            )
 
             loss, correct_cnt = _do_biencoder_fwd_pass(self.biencoder, biencoder_input, self.tensorizer, args)
             total_loss += loss.item()
@@ -209,7 +230,9 @@ class BiEncoderTrainer(object):
         self.biencoder.eval()
         distributed_factor = self.distributed_factor
 
-        data_iterator = self.get_data_iterator(args.dev_file, args.dev_batch_size, shuffle=False)
+        data_iterator = self.get_data_iterator(
+            args.dev_file, args.dev_batch_size, shuffle=False, dataset_name=args.dataset, keyword=args.keyword
+        )
 
         sub_batch_size = args.val_av_rank_bsz
         sim_score_f = BiEncoderNllLoss.get_similarity_function()
@@ -234,6 +257,7 @@ class BiEncoderTrainer(object):
                 num_other_negatives,
                 shuffle=False
             )
+
             total_ctxs = len(ctx_represenations)
             ctxs_ids = biencoder_input.context_ids
             ctxs_segments = biencoder_input.ctx_segments
@@ -256,9 +280,9 @@ class BiEncoderTrainer(object):
                 q_attn_mask = self.tensorizer.get_attn_mask(q_ids)
                 ctx_attn_mask = self.tensorizer.get_attn_mask(ctx_ids_batch)
                 with torch.no_grad():
-                    q_dense, ctx_dense = self.biencoder(
-                        q_ids, q_segments, q_attn_mask, ctx_ids_batch, ctx_seg_batch, ctx_attn_mask
-                    )
+                    inputs = [q_ids, q_segments, q_attn_mask, ctx_ids_batch, ctx_seg_batch, ctx_attn_mask]
+                    inputs = move_to_device(inputs, args.device)
+                    q_dense, ctx_dense = self.biencoder(*inputs)
 
                 if q_dense is not None:
                     q_represenations.extend(q_dense.cpu().split(1, dim=0))
@@ -307,7 +331,10 @@ class BiEncoderTrainer(object):
         return av_rank
 
     def _train_epoch(
-            self, scheduler, epoch: int, eval_step: int,
+            self,
+            scheduler,
+            epoch: int,
+            eval_step: int,
             train_data_iterator: ShardedDataIterator,
     ):
         args = self.args
@@ -329,9 +356,12 @@ class BiEncoderTrainer(object):
             data_iteration = train_data_iterator.get_iteration()
             random.seed(seed + epoch + data_iteration)
             biencoder_batch = BiEncoder.create_biencoder_input(
-                samples_batch, self.tensorizer,
+                samples_batch,
+                self.tensorizer,
                 True,
-                num_hard_negatives, num_other_negatives, shuffle=True,
+                num_hard_negatives,
+                num_other_negatives,
+                shuffle=True,
                 shuffle_positives=args.shuffle_positive_ctx
             )
 
@@ -353,8 +383,8 @@ class BiEncoderTrainer(object):
                     torch.nn.utils.clip_grad_norm_(self.biencoder.parameters(), args.max_grad_norm)
 
             if (i + 1) % args.gradient_accumulation_steps == 0:
-                self.optimizer.step()
                 scheduler.step()
+                self.optimizer.step()
                 self.biencoder.zero_grad()
 
             if i % log_result_step == 0:
@@ -471,34 +501,42 @@ def _calc_loss(
         positive_idx_per_question = local_positive_idxs
         hard_negatives_per_question = local_hard_negatives_idxs
 
-    loss, is_correct = loss_function.calc(global_q_vector, global_ctxs_vector, positive_idx_per_question,
-                                          hard_negatives_per_question)
+    loss, is_correct = loss_function.calc(
+        global_q_vector, global_ctxs_vector, positive_idx_per_question, hard_negatives_per_question
+    )
 
     return loss, is_correct
 
 
 def _do_biencoder_fwd_pass(
-        model: nn.Module, input: BiEncoderBatch, tensorizer: Tensorizer, args) -> (
-        torch.Tensor, int):
+        model: nn.Module,
+        input: BiEncoderBatch,
+        tensorizer: Tensorizer, args
+) -> (torch.Tensor, int):
     input = BiEncoderBatch(**move_to_device(input._asdict(), args.device))
 
     q_attn_mask = tensorizer.get_attn_mask(input.question_ids)
     ctx_attn_mask = tensorizer.get_attn_mask(input.context_ids)
 
     if model.training:
-        model_out = model(input.question_ids, input.question_segments, q_attn_mask, input.context_ids,
-                          input.ctx_segments, ctx_attn_mask)
+        model_out = model(
+            input.question_ids, input.question_segments, q_attn_mask,
+            input.context_ids, input.ctx_segments, ctx_attn_mask
+        )
     else:
         with torch.no_grad():
-            model_out = model(input.question_ids, input.question_segments, q_attn_mask, input.context_ids,
-                              input.ctx_segments, ctx_attn_mask)
+            model_out = model(
+                input.question_ids, input.question_segments, q_attn_mask,
+                input.context_ids, input.ctx_segments, ctx_attn_mask
+            )
 
     local_q_vector, local_ctx_vectors = model_out
 
     loss_function = BiEncoderNllLoss()
 
-    loss, is_correct = _calc_loss(args, loss_function, local_q_vector, local_ctx_vectors, input.is_positive,
-                                  input.hard_negatives)
+    loss, is_correct = _calc_loss(
+        args, loss_function, local_q_vector, local_ctx_vectors, input.is_positive, input.hard_negatives
+    )
 
     is_correct = is_correct.sum().item()
 
@@ -516,6 +554,10 @@ def main():
     add_encoder_params(parser)
     add_training_params(parser)
     add_tokenizer_params(parser)
+
+    parser.add_argument("--dataset", type=str, required=True, help="Name of the dataset")
+    parser.add_argument("--keyword", type=str, help="Type of the keywords", default="present",
+                        choices=["present", "absent", "all"], )
 
     # biencoder specific training features
     parser.add_argument("--eval_per_epoch", default=1, type=int,
@@ -557,7 +599,8 @@ def main():
 
     if args.gradient_accumulation_steps < 1:
         raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
-            args.gradient_accumulation_steps))
+            args.gradient_accumulation_steps)
+        )
 
     if args.output_dir is not None:
         os.makedirs(args.output_dir, exist_ok=True)
