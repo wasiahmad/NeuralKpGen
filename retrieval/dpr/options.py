@@ -93,9 +93,10 @@ def add_reader_preprocessing_params(parser: argparse.ArgumentParser):
 
 
 def get_encoder_checkpoint_params_names():
-    return ['do_lower_case', 'pretrained_model_cfg', 'encoder_model_type',
-            'pretrained_file',
-            'projection_dim', 'sequence_length']
+    return [
+        'do_lower_case', 'pretrained_model_cfg', 'encoder_model_type',
+        'pretrained_file', 'projection_dim', 'sequence_length'
+    ]
 
 
 def get_encoder_params_state(args):
@@ -157,7 +158,8 @@ def setup_args_gpu(args):
         'Initialized host %s as d.rank %d on device=%s, n_gpu=%d, world size=%d', socket.gethostname(),
         args.local_rank, device,
         args.n_gpu,
-        args.distributed_world_size)
+        args.distributed_world_size
+    )
     logger.info("16-bits training: %s ", args.fp16)
 
 

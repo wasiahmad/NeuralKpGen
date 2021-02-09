@@ -21,6 +21,7 @@ import time
 import torch
 
 from typing import Tuple
+from shutil import copy2
 from torch import nn
 from torch import Tensor as T
 
@@ -92,7 +93,10 @@ class BiEncoderTrainer(object):
     ) -> ShardedDataIterator:
 
         data_files = glob.glob(path)
-        data = read_data_from_json_files(data_files, upsample_rates, dataset_name, keyword)
+        data = read_data_from_json_files(
+            data_files, upsample_rates, dataset_name, keyword,
+            sep_token=self.tensorizer.tokenizer.sep_token
+        )
 
         # filter those without positive ctx
         data = [r for r in data if len(r['positive_ctxs']) > 0]
@@ -148,6 +152,9 @@ class BiEncoderTrainer(object):
 
         if args.local_rank in [-1, 0]:
             logger.info('Training finished. Best validation checkpoint %s', self.best_cp_name)
+            # copying the best checkpoint file with name 'checkpoint_best.pt'
+            best_cp = os.path.join(args.output_dir, 'checkpoint_best.pt')
+            copy2(self.best_cp_name, best_cp)
 
     def validate_and_save(self, epoch: int, iteration: int, scheduler):
         args = self.args
@@ -557,7 +564,7 @@ def main():
 
     parser.add_argument("--dataset", type=str, required=True, help="Name of the dataset")
     parser.add_argument("--keyword", type=str, help="Type of the keywords", default="present",
-                        choices=["present", "absent", "all"], )
+                        choices=["present", "absent", "all"])
 
     # biencoder specific training features
     parser.add_argument("--eval_per_epoch", default=1, type=int,

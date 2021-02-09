@@ -29,8 +29,6 @@ def read_predictions(filename):
 def calculate_scores(answers, predictions):
     scores = []
     for key in answers:
-        # import ipdb
-        # ipdb.set_trace()
         if key not in predictions:
             logging.error("Missing prediction for url {}.".format(key))
             sys.exit()

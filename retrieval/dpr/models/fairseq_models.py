@@ -18,7 +18,7 @@ from fairseq.optim.adam import FairseqAdam
 from torch import Tensor as T
 from torch import nn
 
-from dpr.models.hf_models import get_roberta_tensorizer
+from retrieval.dpr.models.hf_models import get_roberta_tensorizer
 from .biencoder import BiEncoder
 
 logger = logging.getLogger(__name__)

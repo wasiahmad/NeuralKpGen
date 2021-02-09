@@ -1,58 +1,55 @@
 #!/usr/bin/env bash
 
-if [[ $# != 2 ]]; then
-    echo "Must provide two arguments";
-    echo "bash train.sh <gpuids> <dataset>";
+if [[ $# != 3 ]]; then
+    echo "Must provide three arguments";
+    echo "bash train.sh <gpuids> <dataset> <keyword-type>";
     exit;
 fi
 
-CUDA_VISIBLE_DEVICES=$1;
-DATASET_NAME=$2;
+GPU=${1:-0};
+DATASET_NAME=${2:-"KP20k"};
+KEYWORD_TYPE=${3:-"present"};
 
 DATA_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/data";
 if [[ $DATASET_NAME != "KP20k" ]] && [[ $DATASET_NAME != "KPTimes" ]]; then
     echo "Dataset name must be either KP20k or KPTimes.";
-    echo "bash train.sh <dataset> <gpuids>";
+    echo "bash script_encode.sh <gpuids> <dataset> <keyword-type>";
     exit;
 fi
 
-train_file="${DATA_DIR}/${DATASET_NAME}.train.jsonl";
-dev_file="${DATA_DIR}/${DATASET_NAME}.valid.jsonl";
+if [[ $DATASET_NAME == "KP20k" ]]; then
+    FILES=()
+    FILES+=(${DATA_DIR}/KP20k.train.jsonl)
+    FILES+=(${DATA_DIR}/KP20k.valid.jsonl)
+    FILES+=(${DATA_DIR}/KP20k.test.jsonl)
+    FILES+=(${DATA_DIR}/inspec.test.jsonl)
+    FILES+=(${DATA_DIR}/krapivin.test.jsonl)
+    FILES+=(${DATA_DIR}/nus.test.jsonl)
+    FILES+=(${DATA_DIR}/semeval.test.jsonl)
+fi
 
 MODEL_BASE_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/models";
-CHECKPOINT_DIR_PATH="${MODEL_BASE_DIR}/${DATASET_NAME}";
-mkdir -p $CHECKPOINT_DIR_PATH;
+CHECKPOINT_DIR_PATH="${MODEL_BASE_DIR}/${DATASET_NAME}_${KEYWORD_TYPE}";
+CKPT_FILENAME="checkpoint_best.pt";
+LOG_FILE="${CHECKPOINT_DIR_PATH}/encoding.log";
 
-LOG_FILE="${CHECKPOINT_DIR_PATH}/retrieval.training.log";
-CKPT_FILENAME="dpr_biencoder_${DATASET_NAME}";
-# pick model from https://huggingface.co/models?search=google/bert_uncase
-pretrained_model="google/bert_uncased_L-6_H-512_A-8";
+OUTPUT_FILE="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/scikp"
+pretrained_model="allenai/scibert_scivocab_uncased";
 
 CODE_BASE_DIR=`realpath ../`;
-script="train_encoder.py";
+script="encode.py";
 
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
-export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES};
+export CUDA_VISIBLE_DEVICES=$GPU;
 
-EXAMPLE_PER_GPU_TRAIN=16;
-EXAMPLE_PER_GPU_VALID=16;
+BATCH_SIZE=128;
 
 python ${script} \
-      --dataset $DATASET_NAME \
-      --output_dir ${CHECKPOINT_DIR_PATH} \
-      --checkpoint_file_name ${CKPT_FILENAME} \
-      --fp16 \
-      --batch_size ${EXAMPLE_PER_GPU_TRAIN} \
-      --dev_batch_size ${EXAMPLE_PER_GPU_VALID} \
-      --train_file ${train_file} \
-      --dev_file ${dev_file} \
-      --sequence_length 256 \
-      --num_train_epochs 20 \
-      --eval_per_epoch 1 \
-      --learning_rate 2e-5 \
-      --max_grad_norm 2.0 \
-      --encoder_model_type hf_bert \
-      --pretrained_model_cfg ${pretrained_model} \
-      --val_av_rank_start_epoch 1 \
-      --warmup_steps 1237 \
-      --seed 1234 2>&1 | tee $LOG_FILE;
+    --dataset $DATASET_NAME \
+    --encoder_model_type hf_bert \
+    --pretrained_model_cfg ${pretrained_model} \
+    --model_file ${CHECKPOINT_DIR_PATH}/${CKPT_FILENAME} \
+    --batch_size $BATCH_SIZE \
+    --ctx_file "${FILES[@]}" \
+    --shard_size 100000 \
+    --out_file $OUTPUT_FILE 2>&1 | tee $LOG_FILE;

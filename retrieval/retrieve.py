@@ -25,7 +25,7 @@ import torch
 from torch import Tensor as T
 from torch import nn
 
-from retrieval.dpr.data.qa_validation import calculate_matches
+from retrieval.dpr.data.qa_validation import calculate_matches_by_id
 from retrieval.dpr.models import init_biencoder_components
 from retrieval.dpr.options import add_encoder_params, setup_args_gpu, print_args, set_encoder_params_from_state, \
     add_tokenizer_params, add_cuda_params
@@ -90,7 +90,9 @@ class DenseRetriever(object):
         return query_tensor
 
     def get_top_docs(
-            self, query_vectors: np.array, top_docs: int = 100
+            self,
+            query_vectors: np.array,
+            top_docs: int = 100
     ) -> List[Tuple[List[object], List[float]]]:
         """
         Does the retrieval of the best matching passages given the query vectors batch
@@ -104,22 +106,30 @@ class DenseRetriever(object):
         return results
 
 
-def parse_qa_csv_file(location) -> Iterator[Tuple[str, List[str]]]:
-    with open(location) as ifile:
-        reader = csv.reader(ifile, delimiter='\t')
-        for row in reader:
-            question = row[0]
-            answers = eval(row[1])
+def parse_jsonl_file(location, keyword_type) -> Iterator[Tuple[str, List[str]]]:
+    with open(location) as jsonlfile:
+        for row in jsonlfile:
+            ex = json.loads(row)
+            if keyword_type == 'all':
+                question = ';'.join(ex["present"] + ex["absent"])
+            else:
+                if len(ex[keyword_type]) == 0:
+                    continue
+                question = ';'.join(ex[keyword_type])
+            if "title" in ex and "abstract" in ex:
+                text = ex["title"] + ' </s> ' + ex["abstract"]
+            else:
+                text = ex["text"]
+            answers = [ex['id']]
             yield question, answers
 
 
 def validate(
-        passages: Dict[object, Tuple[str, str]],
         answers: List[List[str]],
         result_ctx_ids: List[Tuple[List[object], List[float]]],
         workers_num: int, match_type: str
 ) -> List[List[bool]]:
-    match_stats = calculate_matches(passages, answers, result_ctx_ids, workers_num, match_type)
+    match_stats = calculate_matches_by_id(answers, result_ctx_ids, workers_num, match_type)
     top_k_hits = match_stats.top_k_hits
 
     logger.info('Validation results: top k documents hits %s', top_k_hits)
@@ -128,29 +138,9 @@ def validate(
     return match_stats.questions_doc_hits
 
 
-def load_passages(ctx_file: str) -> Dict[object, Tuple[str, str]]:
-    docs = {}
-    logger.info('Reading data from: %s', ctx_file)
-    if ctx_file.endswith(".gz"):
-        with gzip.open(ctx_file, 'rt') as tsvfile:
-            reader = csv.reader(tsvfile, delimiter='\t', )
-            # file format: doc_id, doc_text, title
-            for row in reader:
-                if row[0] != 'id':
-                    docs[row[0]] = (row[1], row[2])
-    else:
-        with open(ctx_file) as tsvfile:
-            reader = csv.reader(tsvfile, delimiter='\t', )
-            # file format: doc_id, doc_text, title
-            for row in reader:
-                if row[0] != 'id':
-                    docs[row[0]] = (row[1], row[2])
-    return docs
-
-
 def save_results(
-        passages: Dict[object, Tuple[str, str]],
-        questions: List[str], answers: List[List[str]],
+        questions: List[str],
+        answers: List[List[str]],
         top_passages_and_scores: List[Tuple[List[object], List[float]]],
         per_question_hits: List[List[bool]],
         out_file: str
@@ -162,7 +152,6 @@ def save_results(
         q_answers = answers[i]
         results_and_scores = top_passages_and_scores[i]
         hits = per_question_hits[i]
-        docs = [passages[doc_id] for doc_id in results_and_scores[0]]
         scores = [str(score) for score in results_and_scores[1]]
         ctxs_num = len(hits)
 
@@ -172,8 +161,6 @@ def save_results(
             'ctxs': [
                 {
                     'id': results_and_scores[0][c],
-                    'title': docs[c][1],
-                    'text': docs[c][0],
                     'score': scores[c],
                     'has_answer': hits[c],
                 } for c in range(ctxs_num)
@@ -212,8 +199,8 @@ def main(args):
 
     prefix_len = len('question_model.')
     question_encoder_state = {
-        key[prefix_len:]: value for (key, value) in saved_state.model_dict.items() if
-        key.startswith('question_model.')
+        key[prefix_len:]: value for (key, value) in saved_state.model_dict.items()
+        if key.startswith('question_model.')
     }
     model_to_load.load_state_dict(question_encoder_state)
     vector_size = model_to_load.get_out_size()
@@ -238,11 +225,12 @@ def main(args):
         retriever.index.index_data(input_paths)
         if args.save_or_load_index:
             retriever.index.serialize(index_path)
+
     # get questions & answers
     questions = []
     question_answers = []
 
-    for ds_item in parse_qa_csv_file(args.qa_file):
+    for ds_item in parse_jsonl_file(args.qa_file, args.keyword):
         question, answers = ds_item
         questions.append(question)
         question_answers.append(answers)
@@ -251,19 +239,14 @@ def main(args):
 
     # get top k results
     top_ids_and_scores = retriever.get_top_docs(questions_tensor.numpy(), args.n_docs)
-    all_passages = load_passages(args.ctx_file)
-
-    if len(all_passages) == 0:
-        raise RuntimeError('No passages data found. Please specify ctx_file param properly.')
 
     questions_doc_hits = validate(
-        all_passages, question_answers, top_ids_and_scores, args.validation_workers, args.match
+        question_answers, top_ids_and_scores, args.validation_workers, args.match
     )
 
     if args.out_file:
         save_results(
-            all_passages, questions, question_answers,
-            top_ids_and_scores, questions_doc_hits, args.out_file
+            questions, question_answers, top_ids_and_scores, questions_doc_hits, args.out_file
         )
 
 
@@ -274,17 +257,17 @@ if __name__ == '__main__':
     add_tokenizer_params(parser)
     add_cuda_params(parser)
 
+    parser.add_argument("--keyword", type=str, help="Type of the keywords", default="present",
+                        choices=["present", "absent", "all"])
     parser.add_argument('--qa_file', required=True, type=str, default=None,
                         help="Question and answers file of the format: question \\t ['answer1','answer2', ...]")
-    parser.add_argument('--ctx_file', required=True, type=str, default=None,
-                        help="All passages file in the tsv format: id \\t passage_text \\t title")
     parser.add_argument('--encoded_ctx_file', type=str, default=None,
                         help='Glob path to encoded passages (from generate_dense_embeddings tool)')
     parser.add_argument('--out_file', type=str, default=None,
                         help='output .json file path to write results to ')
     parser.add_argument('--match', type=str, default='string', choices=['regex', 'string'],
                         help="Answer matching logic type")
-    parser.add_argument('--n-docs', type=int, default=200, help="Amount of top docs to return")
+    parser.add_argument('--n-docs', type=int, default=100, help="Amount of top docs to return")
     parser.add_argument('--validation_workers', type=int, default=16,
                         help="Number of parallel processes to validate results")
     parser.add_argument('--batch_size', type=int, default=32, help="Batch size for question encoder forward pass")

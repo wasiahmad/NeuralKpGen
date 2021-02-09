@@ -19,16 +19,61 @@ from typing import Tuple, List, Dict
 
 import regex as re
 
-from dpr.utils.tokenizers import SimpleTokenizer
+from retrieval.dpr.utils.tokenizers import SimpleTokenizer
 
 logger = logging.getLogger(__name__)
 
 QAMatchStats = collections.namedtuple('QAMatchStats', ['top_k_hits', 'questions_doc_hits'])
 
 
+def calculate_matches_by_id(
+        answers: List[List[str]],
+        closest_docs: List[Tuple[List[object], List[float]]],
+        workers_num: int,
+        match_type: str
+) -> QAMatchStats:
+    """
+    Evaluates answers presence in the set of documents. This function is supposed to be used with a large collection of
+    documents and results. It internally forks multiple sub-processes for evaluation and then merges results
+    :param answers: list of answers's list. One list per question
+    :param closest_docs: document ids of the top results along with their scores
+    :param workers_num: amount of parallel threads to process data
+    :param match_type: type of answer matching. Refer to has_answer code for available options
+    :return: matching information tuple.
+    top_k_hits - a list where the index is the amount of top documents retrieved and the value is the total amount of
+    valid matches across an entire dataset.
+    questions_doc_hits - more detailed info with answer matches for every question and every retrieved document
+    """
+    processes = ProcessPool(
+        processes=workers_num,
+    )
+
+    logger.info('Matching answers in top docs...')
+
+    get_score_partial = partial(check_answer_by_id)
+
+    # answers is a list of document ids
+    questions_answers_docs = zip(answers, closest_docs)
+
+    scores = processes.map(get_score_partial, questions_answers_docs)
+
+    logger.info('Per question validation results len=%d', len(scores))
+
+    n_docs = len(closest_docs[0][0])
+    top_k_hits = [0] * n_docs
+    for question_hits in scores:
+        best_hit = next((i for i, x in enumerate(question_hits) if x), None)
+        if best_hit is not None:
+            top_k_hits[best_hit:] = [v + 1 for v in top_k_hits[best_hit:]]
+
+    return QAMatchStats(top_k_hits, scores)
+
+
 def calculate_matches(
-        all_docs: Dict[object, Tuple[str, str]], answers: List[List[str]],
-        closest_docs: List[Tuple[List[object], List[float]]], workers_num: int,
+        all_docs: Dict[object, Tuple[str, str]],
+        answers: List[List[str]],
+        closest_docs: List[Tuple[List[object], List[float]]],
+        workers_num: int,
         match_type: str
 ) -> QAMatchStats:
     """
@@ -72,6 +117,22 @@ def calculate_matches(
             top_k_hits[best_hit:] = [v + 1 for v in top_k_hits[best_hit:]]
 
     return QAMatchStats(top_k_hits, scores)
+
+
+def check_answer_by_id(questions_answers_docs) -> List[bool]:
+    """Search through all the top docs to see if they have any of the answers."""
+    answers, (doc_ids, doc_scores) = questions_answers_docs
+
+    hits = []
+
+    for i, doc_id in enumerate(doc_ids):
+        answer_found = False
+        for single_answer in answers:
+            if single_answer == doc_id:
+                answer_found = True
+                break
+        hits.append(answer_found)
+    return hits
 
 
 def check_answer(questions_answers_docs, tokenizer, match_type) -> List[bool]:

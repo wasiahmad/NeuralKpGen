@@ -25,7 +25,10 @@ CheckpointState = collections.namedtuple(
 
 
 def setup_for_distributed_mode(
-        model: nn.Module, optimizer: torch.optim.Optimizer, device: object, n_gpu: int = 1,
+        model: nn.Module,
+        optimizer: torch.optim.Optimizer,
+        device: object,
+        n_gpu: int = 1,
         local_rank: int = -1,
         fp16: bool = False,
         fp16_opt_level: str = "O1"

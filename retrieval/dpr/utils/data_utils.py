@@ -38,6 +38,7 @@ def read_data_from_json_files(
         upsample_rates: List = None,
         dataset="KP20k",
         keyword="all",
+        sep_token='',
 ) -> List:
     results = []
     if upsample_rates is None:
@@ -57,7 +58,8 @@ def read_data_from_json_files(
                         if len(ex[keyword]) == 0:
                             continue
                         q = ';'.join(ex[keyword])
-                    text = ex["title"] + ' </s> ' + ex["abstract"]
+
+                    text = ex["title"] + ' {} '.format(sep_token) + ex["abstract"]
                     ctx = {"text": text, "title": None, "answers": [text]}
                     object = {
                         "question": q,

@@ -39,7 +39,9 @@ logger.addHandler(console)
 
 
 def gen_ctx_vectors(
-        ctx_rows: List[Tuple[object, str, str]], model: nn.Module, tensorizer: Tensorizer,
+        ctx_rows: List[Tuple[object, str, str]],
+        model: nn.Module,
+        tensorizer: Tensorizer,
         insert_title: bool = True
 ) -> List[Tuple[object, np.array]]:
     n = len(ctx_rows)
@@ -49,9 +51,8 @@ def gen_ctx_vectors(
     for j, batch_start in enumerate(range(0, n, bsz)):
 
         batch_token_tensors = [
-            tensorizer.text_to_tensor(ctx[1], title=ctx[2]
-            if insert_title else None) for ctx in
-            ctx_rows[batch_start:batch_start + bsz]
+            tensorizer.text_to_tensor(ctx[1], title=ctx[2] if insert_title else None)
+            for ctx in ctx_rows[batch_start:batch_start + bsz]
         ]
 
         ctx_ids_batch = move_to_device(torch.stack(batch_token_tensors, dim=0), args.device)
@@ -68,8 +69,7 @@ def gen_ctx_vectors(
         total += len(ctx_ids)
 
         results.extend([
-            (ctx_ids[i], out[i].view(-1).numpy())
-            for i in range(out.size(0))
+            (ctx_ids[i], out[i].view(-1).numpy()) for i in range(out.size(0))
         ])
 
         if total % 10 == 0:
@@ -87,9 +87,14 @@ def main(args):
 
     encoder = encoder.ctx_model
 
-    encoder, _ = setup_for_distributed_mode(
-        encoder, None, args.device, args.n_gpu, args.local_rank, args.fp16, args.fp16_opt_level
-    )
+    if args.fp16:
+        encoder = encoder.half()
+        if args.n_gpu > 1:
+            encoder = torch.nn.DataParallel(encoder)
+    # the following doesn't work for fp16
+    # encoder, _ = setup_for_distributed_mode(
+    #     encoder, None, args.device, args.n_gpu, args.local_rank, args.fp16, args.fp16_opt_level
+    # )
     encoder.eval()
 
     # load weights from the model file
@@ -98,45 +103,43 @@ def main(args):
     logger.debug('saved model keys =%s', saved_state.model_dict.keys())
 
     prefix_len = len('ctx_model.')
-    ctx_state = {key[prefix_len:]: value for (key, value) in saved_state.model_dict.items() if
-                 key.startswith('ctx_model.')}
+    ctx_state = {
+        key[prefix_len:]: value for (key, value) in saved_state.model_dict.items()
+        if key.startswith('ctx_model.')
+    }
     model_to_load.load_state_dict(ctx_state)
 
-    logger.info('reading data from file=%s', args.ctx_file)
+    logger.info('reading data from file=%s', ', '.join(args.ctx_file))
 
     rows = []
-    idx = 0
-    with open(args.ctx_file) as tsvfile:
-        # reader = csv.reader(tsvfile, delimiter='\t')
-        # # file format: doc_id, doc_text, title
-        # rows.extend([(row[0], row[1], row[2]) for row in reader if row[0] != 'id'])
+    if args.dataset == "KP20k":
+        for file in args.ctx_file:
+            with open(file) as jsonlfile:
+                for line in jsonlfile:
+                    ex = json.loads(line)
+                    text = ex["title"] + ' </s> ' + ex["abstract"]
+                    rows.append((ex['id'], text, None))
 
-        for line in tsvfile:
-            if args.dataset == "KP20k":
-                js = json.loads(line)
-                text = js["title"] + ' </s> ' + js["abstract"]
-                rows.extend([(str(idx), line, None)])
-            else:
-                rows.extend([(args.ctx_file + "_" + str(idx), line, None)])
-            idx += 1
-
-    shard_size = int(len(rows) / args.num_shards)
-    start_idx = args.shard_id * shard_size
-    end_idx = start_idx + shard_size
-
-    logger.info('Producing encodings for passages range: %d to %d (out of total %d)', start_idx, end_idx, len(rows))
-    rows = rows[start_idx:end_idx]
-
-    # data = gen_ctx_vectors(rows, encoder, tensorizer, True)
-    data = gen_ctx_vectors(rows, encoder, tensorizer, False)
-
-    file = args.out_file + '_' + str(args.shard_id) + '.pkl'
-    pathlib.Path(os.path.dirname(file)).mkdir(parents=True, exist_ok=True)
-    logger.info('Writing results to %s' % file)
-    with open(file, mode='wb') as f:
-        pickle.dump(data, f)
-
-    logger.info('Total passages processed %d. Written to %s', len(data), file)
+    shard_id = 0
+    while True:
+        start_idx = shard_id * args.shard_size
+        if start_idx >= len(rows):
+            break
+        end_idx = start_idx + args.shard_size
+        if end_idx >= len(rows):
+            end_idx = len(rows)
+        logger.info(
+            'Producing encodings for passages range: %d to %d (out of total %d)', start_idx, end_idx, len(rows)
+        )
+        rows = rows[start_idx:end_idx]
+        data = gen_ctx_vectors(rows, encoder, tensorizer, False)
+        file = args.out_file + '_' + str(shard_id) + '.pkl'
+        pathlib.Path(os.path.dirname(file)).mkdir(parents=True, exist_ok=True)
+        logger.info('Writing results to %s' % file)
+        with open(file, mode='wb') as f:
+            pickle.dump(data, f)
+        logger.info('Total passages processed %d. Written to %s', len(data), file)
+        shard_id += 1
 
 
 if __name__ == '__main__':
@@ -146,11 +149,10 @@ if __name__ == '__main__':
     add_tokenizer_params(parser)
     add_cuda_params(parser)
 
-    parser.add_argument('--ctx_file', type=str, default=None, help='Path to passages set .tsv file')
+    parser.add_argument('--ctx_file', required=True, nargs="+", default=["-"], help='Input files to encode')
     parser.add_argument('--out_file', required=True, type=str, default=None,
-                        help='output file path to write results to')
-    parser.add_argument('--shard_id', type=int, default=0, help="Number(0-based) of data shard to process")
-    parser.add_argument('--num_shards', type=int, default=1, help="Total amount of data shards")
+                        help='Output file path to write results to')
+    parser.add_argument('--shard_size', type=int, default=50000, help="Total amount of data in one shard")
     parser.add_argument('--batch_size', type=int, default=32, help="Batch size for the passage encoder forward pass")
     parser.add_argument('--dataset', type=str, default=None, help=' to build correct dataset parser ')
 

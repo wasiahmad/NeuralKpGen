@@ -20,8 +20,8 @@ import torch.nn.functional as F
 from torch import Tensor as T
 from torch import nn
 
-from dpr.utils.data_utils import Tensorizer
-from dpr.utils.data_utils import normalize_question
+from retrieval.dpr.utils.data_utils import Tensorizer
+from retrieval.dpr.utils.data_utils import normalize_question
 
 logger = logging.getLogger(__name__)
 
