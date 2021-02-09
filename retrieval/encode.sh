@@ -13,12 +13,12 @@ KEYWORD_TYPE=${3:-"present"};
 DATA_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/data";
 if [[ $DATASET_NAME != "KP20k" ]] && [[ $DATASET_NAME != "KPTimes" ]]; then
     echo "Dataset name must be either KP20k or KPTimes.";
-    echo "bash script_encode.sh <gpuids> <dataset> <keyword-type>";
+    echo "bash encode.sh <gpuids> <dataset> <keyword-type>";
     exit;
 fi
 
+FILES=()
 if [[ $DATASET_NAME == "KP20k" ]]; then
-    FILES=()
     FILES+=(${DATA_DIR}/KP20k.train.jsonl)
     FILES+=(${DATA_DIR}/KP20k.valid.jsonl)
     FILES+=(${DATA_DIR}/KP20k.test.jsonl)
@@ -26,6 +26,10 @@ if [[ $DATASET_NAME == "KP20k" ]]; then
     FILES+=(${DATA_DIR}/krapivin.test.jsonl)
     FILES+=(${DATA_DIR}/nus.test.jsonl)
     FILES+=(${DATA_DIR}/semeval.test.jsonl)
+elif [[ $DATASET_NAME == "KPTimes" ]]; then
+    FILES+=(${DATA_DIR}/KPTimes.train.jsonl)
+    FILES+=(${DATA_DIR}/KPTimes.valid.jsonl)
+    FILES+=(${DATA_DIR}/KPTimes.test.jsonl)
 fi
 
 MODEL_BASE_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/models";

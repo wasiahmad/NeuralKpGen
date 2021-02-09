@@ -13,8 +13,16 @@ KEYWORD_TYPE=${3:-"present"};
 DATA_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/data";
 if [[ $DATASET_NAME != "KP20k" ]] && [[ $DATASET_NAME != "KPTimes" ]]; then
     echo "Dataset name must be either KP20k or KPTimes.";
-    echo "bash script_train.sh <gpuids> <dataset> <keyword-type>";
+    echo "bash train.sh <gpuids> <dataset> <keyword-type>";
     exit;
+fi
+
+if [[ $DATASET_NAME == "KP20k" ]]; then
+    encoder_model_type=hf_bert
+    pretrained_model="allenai/scibert_scivocab_uncased";
+elif [[ $DATASET_NAME == "KPTimes" ]]; then
+    encoder_model_type=hf_bert
+    pretrained_model="bert-base-uncased";
 fi
 
 train_file="${DATA_DIR}/${DATASET_NAME}.train.jsonl";
@@ -26,7 +34,6 @@ mkdir -p $CHECKPOINT_DIR_PATH;
 
 LOG_FILE="${CHECKPOINT_DIR_PATH}/training.log";
 CKPT_FILENAME="dpr_biencoder";
-pretrained_model="allenai/scibert_scivocab_uncased";
 
 CODE_BASE_DIR=`realpath ..`;
 script="${CODE_BASE_DIR}/retrieval/source/train.py";
@@ -61,8 +68,8 @@ python ${script} \
     --eval_per_epoch 1 \
     --learning_rate 2e-5 \
     --max_grad_norm 2.0 \
-    --encoder_model_type hf_bert \
-    --pretrained_model_cfg ${pretrained_model} \
+    --encoder_model_type $encoder_model_type \
+    --pretrained_model_cfg $pretrained_model \
     --val_av_rank_start_epoch 1 \
     --warmup_steps 1237 \
     --seed 1234 2>&1 | tee $LOG_FILE;
