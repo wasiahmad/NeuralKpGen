@@ -30,13 +30,18 @@ MODEL_BASE_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/models
 CHECKPOINT_DIR_PATH="${MODEL_BASE_DIR}/${DATASET_NAME}_${KEYWORD_TYPE}";
 OUT_DIR=/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs;
 
+if [[ $DATASET_NAME == "KP20k" ]]; then
+    OUTPUT_ENCODED_FILE="${OUT_DIR}/scikp.*.pkl"
+elif [[ $DATASET_NAME == "KPTimes" ]]; then
+    OUTPUT_ENCODED_FILE="${OUT_DIR}/web.*.pkl"
+fi
+
 SPLIT=test
 TOP_K=100
 
 INPUT_FILE="${DATA_DIR}/${DATASET_NAME}.${SPLIT}.jsonl";
 CKPT_FILENAME="checkpoint_best.pt";
-OUTPUT_ENCODED_FILE="${OUT_DIR}/scikp.*.pkl"
-OUT_FILE="${OUT_DIR}/${SPLIT}_${TOP_K}.json"
+OUT_FILE="${OUT_DIR}/${DATASET_NAME}_${SPLIT}_${TOP_K}.json"
 LOG_FILE="${CHECKPOINT_DIR_PATH}/retrieval.log";
 
 CODE_BASE_DIR=`realpath ..`;

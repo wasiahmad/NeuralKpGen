@@ -26,19 +26,22 @@ if [[ $DATASET_NAME == "KP20k" ]]; then
     FILES+=(${DATA_DIR}/krapivin.test.jsonl)
     FILES+=(${DATA_DIR}/nus.test.jsonl)
     FILES+=(${DATA_DIR}/semeval.test.jsonl)
+    encoder_model_type=hf_bert
+    pretrained_model="allenai/scibert_scivocab_uncased";
+    OUTPUT_FILE="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/scikp";
 elif [[ $DATASET_NAME == "KPTimes" ]]; then
     FILES+=(${DATA_DIR}/KPTimes.train.jsonl)
     FILES+=(${DATA_DIR}/KPTimes.valid.jsonl)
     FILES+=(${DATA_DIR}/KPTimes.test.jsonl)
+    encoder_model_type=hf_bert
+    pretrained_model="bert-base-uncased";
+    OUTPUT_FILE="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/web";
 fi
 
 MODEL_BASE_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/models";
 CHECKPOINT_DIR_PATH="${MODEL_BASE_DIR}/${DATASET_NAME}_${KEYWORD_TYPE}";
 CKPT_FILENAME="checkpoint_best.pt";
 LOG_FILE="${CHECKPOINT_DIR_PATH}/encoding.log";
-
-OUTPUT_FILE="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/scikp"
-pretrained_model="allenai/scibert_scivocab_uncased";
 
 CODE_BASE_DIR=`realpath ..`;
 script="${CODE_BASE_DIR}/retrieval/source/encode.py";
@@ -50,8 +53,8 @@ BATCH_SIZE=128;
 
 python ${script} \
     --dataset $DATASET_NAME \
-    --encoder_model_type hf_bert \
-    --pretrained_model_cfg ${pretrained_model} \
+    --encoder_model_type $encoder_model_type \
+    --pretrained_model_cfg $pretrained_model \
     --model_file ${CHECKPOINT_DIR_PATH}/${CKPT_FILENAME} \
     --batch_size $BATCH_SIZE \
     --ctx_file "${FILES[@]}" \

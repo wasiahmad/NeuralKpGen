@@ -2,7 +2,7 @@ import json
 import argparse
 
 
-def main(args):
+def scikp(args):
     idx = 0
     with open(args.out_file, 'w', encoding='utf8') as fw:
         with open(args.src_file) as f1, open(args.tgt_file) as f2:
@@ -36,15 +36,50 @@ def main(args):
                 fw.write(json.dumps(obj) + '\n')
 
 
+def kptimes(args):
+    idx = 0
+    with open(args.out_file, 'w', encoding='utf8') as fw:
+        with open(args.input_file) as f:
+            for line in f:
+                ex = json.loads(line.strip())
+                if len(ex['title']) == 0 or len(ex['abstract']) == 0:
+                    continue
+                keyphrases = ex['keyword'].split(';')
+                pkps, akps = [], []
+                text = (ex['title'] + ' ' + ex['abstract']).strip()
+                for kp in keyphrases:
+                    if kp in text:
+                        pkps.append(kp)
+                    else:
+                        akps.append(kp)
+                obj = {
+                    'id': ex['id'],
+                    'title': ex['title'],
+                    'abstract': ex['abstract'],
+                    'present': pkps,
+                    'absent': akps
+                }
+                idx += 1
+                fw.write(json.dumps(obj) + '\n')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='convert.py',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument('-src_file', required=True, help='Source file')
-    parser.add_argument('-tgt_file', required=True, help='Target file')
+    parser.add_argument('-input_file', default=None, help='Input json file')
+    parser.add_argument('-src_file', default=None, help='Source *.txt file')
+    parser.add_argument('-tgt_file', default=None, help='Target *.txt file')
     parser.add_argument('-out_file', required=True, help='Output file path')
-    parser.add_argument('-dataset', default=None, help='Dataset name')
+    parser.add_argument('-dataset', default=None, help='Dataset name',
+                        choices=['kp20k', 'inspec', 'nus', 'krapivin', 'semeval', 'kptimes'])
     parser.add_argument('-split', default=None, help='Dataset name')
     args = parser.parse_args()
-    main(args)
+    if args.dataset == 'kptimes':
+        assert args.input_file is not None
+        kptimes(args)
+    else:
+        assert args.src_file is not None
+        assert args.tgt_file is not None
+        scikp(args)

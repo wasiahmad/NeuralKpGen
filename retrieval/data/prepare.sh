@@ -1,25 +1,43 @@
 #!/usr/bin/env bash
 
-DATA_DIR=/home/wasiahmad/workspace/projects/NeuralKpGen/data/scikp/kp20k_separated
+DATA_BASE_DIR=/home/wasiahmad/workspace/projects/NeuralKpGen/data
 OUT_DIR=/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/data
 mkdir -p $OUT_DIR
 
+DATA_DIR=${DATA_BASE_DIR}/scikp/kp20k_separated
+
 for split in train valid test; do
-    python convert.py \
-        -src_file $DATA_DIR/${split}_src.txt \
-        -tgt_file $DATA_DIR/${split}_trg.txt \
-        -out_file $OUT_DIR/KP20k.${split}.jsonl \
-        -dataset kp20k \
-        -split $split;
+    if [[ ! -f $OUT_DIR/KP20k.${split}.jsonl ]]; then
+        python convert.py \
+            -src_file $DATA_DIR/${split}_src.txt \
+            -tgt_file $DATA_DIR/${split}_trg.txt \
+            -out_file $OUT_DIR/KP20k.${split}.jsonl \
+            -dataset kp20k \
+            -split $split;
+    fi
 done
 
-DATA_DIR=../../data/scikp/cross_domain_separated
+DATA_DIR=${DATA_BASE_DIR}/scikp/cross_domain_separated
 
 for dataset in inspec nus krapivin semeval; do
-    python convert.py \
-        -src_file $DATA_DIR/word_${dataset}_testing_context.txt \
-        -tgt_file $DATA_DIR/word_${dataset}_testing_allkeywords.txt \
-        -out_file $OUT_DIR/${dataset}.test.jsonl \
-        -dataset $dataset \
-        -split test;
+    if [[ ! -f $OUT_DIR/${dataset}.test.jsonl ]]; then
+        python convert.py \
+            -src_file $DATA_DIR/word_${dataset}_testing_context.txt \
+            -tgt_file $DATA_DIR/word_${dataset}_testing_allkeywords.txt \
+            -out_file $OUT_DIR/${dataset}.test.jsonl \
+            -dataset $dataset \
+            -split test;
+    fi
+done
+
+DATA_DIR=${DATA_BASE_DIR}/kptimes
+
+for split in train valid test; do
+    if [[ ! -f $OUT_DIR/KPTimes.${split}.jsonl ]]; then
+        python convert.py \
+            -input_file $DATA_DIR/KPTimes.${split}.jsonl \
+            -out_file $OUT_DIR/KPTimes.${split}.jsonl \
+            -dataset kptimes \
+            -split $split;
+    fi
 done
