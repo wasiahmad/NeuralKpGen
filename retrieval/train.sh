@@ -28,8 +28,8 @@ LOG_FILE="${CHECKPOINT_DIR_PATH}/training.log";
 CKPT_FILENAME="dpr_biencoder";
 pretrained_model="allenai/scibert_scivocab_uncased";
 
-CODE_BASE_DIR=`realpath ../`;
-script="train.py";
+CODE_BASE_DIR=`realpath ..`;
+script="${CODE_BASE_DIR}/retrieval/source/train.py";
 
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 export CUDA_VISIBLE_DEVICES=$GPU;

@@ -36,8 +36,8 @@ LOG_FILE="${CHECKPOINT_DIR_PATH}/encoding.log";
 OUTPUT_FILE="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/scikp"
 pretrained_model="allenai/scibert_scivocab_uncased";
 
-CODE_BASE_DIR=`realpath ../`;
-script="encode.py";
+CODE_BASE_DIR=`realpath ..`;
+script="${CODE_BASE_DIR}/retrieval/source/encode.py";
 
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 export CUDA_VISIBLE_DEVICES=$GPU;

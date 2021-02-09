@@ -39,8 +39,8 @@ OUTPUT_ENCODED_FILE="${OUT_DIR}/scikp.*.pkl"
 OUT_FILE="${OUT_DIR}/${SPLIT}_${TOP_K}.json"
 LOG_FILE="${CHECKPOINT_DIR_PATH}/retrieval.log";
 
-CODE_BASE_DIR=`realpath ../`;
-script="retrieve.py";
+CODE_BASE_DIR=`realpath ..`;
+script="${CODE_BASE_DIR}/retrieval/source/retrieve.py";
 
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES};
