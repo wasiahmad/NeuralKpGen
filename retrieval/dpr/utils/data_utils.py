@@ -53,11 +53,11 @@ def read_data_from_json_files(
                 for row in reader:
                     ex = json.loads(row)
                     if keyword == 'all':
-                        q = ';'.join(ex["present"] + ex["absent"])
+                        q = ' ; '.join(ex["present"] + ex["absent"])
                     else:
                         if len(ex[keyword]) == 0:
                             continue
-                        q = ';'.join(ex[keyword])
+                        q = ' ; '.join(ex[keyword])
 
                     text = ex["title"] + ' {} '.format(sep_token) + ex["abstract"]
                     ctx = {"text": text, "title": None, "answers": [text]}

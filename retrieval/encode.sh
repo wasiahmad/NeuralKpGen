@@ -49,7 +49,7 @@ script="${CODE_BASE_DIR}/retrieval/source/encode.py";
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 export CUDA_VISIBLE_DEVICES=$GPU;
 
-BATCH_SIZE=128;
+BATCH_SIZE=64;
 
 python ${script} \
     --dataset $DATASET_NAME \

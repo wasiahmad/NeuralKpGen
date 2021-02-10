@@ -357,6 +357,7 @@ class BiEncoderTrainer(object):
         self.biencoder.train()
         epoch_batches = train_data_iterator.max_iterations
         data_iteration = 0
+        start_time = time.time()
         for i, samples_batch in enumerate(train_data_iterator.iterate_data(epoch=epoch)):
 
             # to be able to resume shuffled ctx- pools
@@ -397,7 +398,9 @@ class BiEncoderTrainer(object):
             if i % log_result_step == 0:
                 lr = self.optimizer.param_groups[0]['lr']
                 logger.info(
-                    'Epoch: %d: Step: %d/%d, loss=%f, lr=%f', epoch, data_iteration, epoch_batches, loss.item(), lr)
+                    'Epoch: %d: Step: %d/%d, loss=%f, lr=%f, elapsed_time=%f sec.',
+                    epoch, data_iteration, epoch_batches, loss.item(), lr, time.time() - start_time
+                )
 
             if (i + 1) % rolling_loss_step == 0:
                 logger.info('Train batch %d', data_iteration)
@@ -459,7 +462,11 @@ class BiEncoderTrainer(object):
 
 
 def _calc_loss(
-        args, loss_function, local_q_vector, local_ctx_vectors, local_positive_idxs,
+        args,
+        loss_function,
+        local_q_vector,
+        local_ctx_vectors,
+        local_positive_idxs,
         local_hard_negatives_idxs: list = None,
 ) -> Tuple[T, bool]:
     """

@@ -50,7 +50,7 @@ script="${CODE_BASE_DIR}/retrieval/source/retrieve.py";
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES};
 
-BATCH_SIZE=128;
+BATCH_SIZE=64;
 
 python ${script} \
     --fp16 \

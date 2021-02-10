@@ -44,20 +44,24 @@ export CUDA_VISIBLE_DEVICES=$GPU;
 IFS=',' read -a GPU_IDS <<< "$1";
 NUM_GPU=${#GPU_IDS[@]}
 
-BATCH_SIZE=32;
-PER_GPU_TRAIN_BATCH_SIZE=16;
-if [[ "$(($PER_GPU_TRAIN_BATCH_SIZE * $NUM_GPU))" -gt "$BATCH_SIZE" ]]; then
-    UPDATE_FREQ=1
+EFFECTIVE_BATCH_SIZE=48;
+PER_GPU_TRAIN_BATCH_SIZE=12;
+REQUIRED_NUM_GPU=$(($EFFECTIVE_BATCH_SIZE / $PER_GPU_TRAIN_BATCH_SIZE));
+BATCH_SIZE=$(($PER_GPU_TRAIN_BATCH_SIZE * $NUM_GPU))
+
+if [[ "$BATCH_SIZE" -gt "$EFFECTIVE_BATCH_SIZE" ]]; then
+    UPDATE_FREQ=1;
+    echo "Warning: $REQUIRED_NUM_GPU GPUs are enough for fine-tuning.";
 else
-    UPDATE_FREQ=$(($BATCH_SIZE / $(($PER_GPU_TRAIN_BATCH_SIZE * $NUM_GPU))));
+    UPDATE_FREQ=$(($EFFECTIVE_BATCH_SIZE / $BATCH_SIZE));
 fi
 
 python ${script} \
+    --fp16 \
     --dataset $DATASET_NAME \
     --keyword $KEYWORD_TYPE \
     --output_dir ${CHECKPOINT_DIR_PATH} \
     --checkpoint_file_name ${CKPT_FILENAME} \
-    --fp16 \
     --batch_size $BATCH_SIZE \
     --dev_batch_size $BATCH_SIZE \
     --gradient_accumulation_steps $UPDATE_FREQ \
@@ -70,6 +74,6 @@ python ${script} \
     --max_grad_norm 2.0 \
     --encoder_model_type $encoder_model_type \
     --pretrained_model_cfg $pretrained_model \
-    --val_av_rank_start_epoch 1 \
+    --val_av_rank_start_epoch 0 \
     --warmup_steps 1237 \
     --seed 1234 2>&1 | tee $LOG_FILE;

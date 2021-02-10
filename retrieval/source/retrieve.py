@@ -106,7 +106,7 @@ class DenseRetriever(object):
         return results
 
 
-def parse_jsonl_file(location, keyword_type) -> Iterator[Tuple[str, List[str]]]:
+def parse_jsonl_file(location, keyword_type, sep_token) -> Iterator[Tuple[str, List[str]]]:
     with open(location) as jsonlfile:
         for row in jsonlfile:
             ex = json.loads(row)
@@ -115,9 +115,9 @@ def parse_jsonl_file(location, keyword_type) -> Iterator[Tuple[str, List[str]]]:
             else:
                 if len(ex[keyword_type]) == 0:
                     continue
-                question = ';'.join(ex[keyword_type])
+                question = ' ; '.join(ex[keyword_type])
             if "title" in ex and "abstract" in ex:
-                text = ex["title"] + ' </s> ' + ex["abstract"]
+                text = ex["title"] + ' {} '.format(sep_token) + ex["abstract"]
             else:
                 text = ex["text"]
             answers = [ex['id']]
@@ -230,7 +230,7 @@ def main(args):
     questions = []
     question_answers = []
 
-    for ds_item in parse_jsonl_file(args.qa_file, args.keyword):
+    for ds_item in parse_jsonl_file(args.qa_file, args.keyword, tensorizer.tokenizer.sep_token):
         question, answers = ds_item
         questions.append(question)
         question_answers.append(answers)
