@@ -21,9 +21,7 @@ def MAP(inputfile):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_file', type=str, required=True, help='Log JSON file')
-    parser.add_argument('--metric', type=str, default='MAP', help='Evaluation metric')
     args = parser.parse_args()
 
-    if args.metric == 'MAP':
-        map = MAP(args.input_file)
-        print("MAP - ", map)
+    map = MAP(args.input_file)
+    print("MAP - ", map)

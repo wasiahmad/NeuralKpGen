@@ -64,4 +64,4 @@ if [[ ! -f $OUTFILE ]]; then
         --port 9200;
 fi
 
-python eval_rank.py --input_file $OUTFILE --metric MAP;
+python eval_rank.py --input_file $OUTFILE;
