@@ -15,10 +15,9 @@ def read_jsonlines(file_name):
     return lines
 
 
-# help from https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html
-def search_es(es_obj, index_name, keywords, n_results=5):
+def search_es(es_obj, index_name, keywords, match_type='match', n_results=5):
     # construct query
-    match = [{"match_phrase": {"document_text": kw}} for kw in keywords]
+    match = [{match_type: {"document_text": kw}} for kw in keywords]
     query = {
         "query": {
             "bool": {
@@ -49,16 +48,15 @@ def main():
 
     for item in tqdm(input_data):
         if args.keyword == 'all':
-            # question = ' ; '.join(item["present"] + item["absent"])
             question = item["present"] + item["absent"]
         else:
             if len(item[args.keyword]) == 0:
                 continue
-            # question = ' ; '.join(item[args.keyword])
             question = item[args.keyword]
 
         res = search_es(
-            es_obj=es, index_name=args.index_name, keywords=question, n_results=args.n_docs
+            es_obj=es, index_name=args.index_name, keywords=question,
+            match_type='match', n_results=args.n_docs
         )
         result[item["id"]] = {
             "hits": res["hits"]["hits"],
@@ -85,7 +83,7 @@ def main():
     with open(args.output_fp, 'w') as outfile:
         json.dump(result, outfile, indent=True)
 
-    top_n_accuracy = len([q_id for q_id, item in result.items() if item["found"] is True]) / len(result)
+    top_n_accuracy = len([q_id for q_id, item in result.items() if item["found"]]) / len(result)
     print(top_n_accuracy)
 
 

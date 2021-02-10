@@ -63,3 +63,5 @@ if [[ ! -f $OUTFILE ]]; then
         --n_docs 100 \
         --port 9200;
 fi
+
+python eval_rank.py --input_file $OUTFILE --metric MAP;
