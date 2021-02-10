@@ -9,7 +9,7 @@ from elasticsearch import Elasticsearch
 from retrieval.bm25.doc_db import DocDB
 
 
-def build_index(db_path, lcode, domain, es_index_settings, port=9200, overwrite=False):
+def build_index(db_path, domain, es_index_settings, port=9200, overwrite=False):
     db = DocDB(db_path)
 
     # initialize the elastic search
@@ -88,7 +88,6 @@ def main():
     question_text = "natural language processing"
     es = build_index(
         args.db_path,
-        'en',
         args.domain,
         json.load(open(args.config_file_path)),
         port=args.port,
@@ -97,7 +96,7 @@ def main():
     if es is not None:
         res = search_es(
             es_obj=es,
-            index_name="{}_search_test_new".format(args.domain),
+            index_name="{}_search_test".format(args.domain),
             question_text=question_text,
             n_results=10
         )

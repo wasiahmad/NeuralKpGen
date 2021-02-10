@@ -27,3 +27,29 @@ Steps involved are:
 - Create db from preprocessed data.
 - Index the preprocessed documents.
 - Search documents based on BM25 scores.
+
+## Results
+
+- We consider retrieving top-100 documents.
+
+#### Present Keyphrases
+
+|          | # Ex.   | Acc.  | MAP   |
+| -------  | :----:  | :---: | :---: |
+| KP20k    | 20,000  |  0.90 |  ?    |
+| Inspec   | 500     |  0.99 |  ?    | 
+| Nus      | 211     |  0.95 |  ?    |
+| Krapivin | 400     |  0.87 |  ?    |
+| SemEval  | 100     |  0.38 |  ?    |
+| KPTimes  | 20,000  |  ?    |  ?    |
+
+#### Absent Keyphrases
+
+|          | # Ex.   | Acc.   | MAP   |
+| -------  | :-----: | :----: | :---: |
+| KP20k    | 20,000  |  ?     |  ?    |
+| Inspec   | 500     |  0.05  |  ?    | 
+| Nus      | 211     |  0.005 |  ?    |
+| Krapivin | 400     |  0.008 |  ?    |
+| SemEval  | 100     |  0.01  |  ?    |
+| KPTimes  | 20,000  |  ?     |  ?    |

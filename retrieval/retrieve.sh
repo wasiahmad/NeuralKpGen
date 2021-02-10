@@ -19,7 +19,7 @@ GPU=${1:-0};
 DATASET_NAME=${2:-"KP20k"};
 KEYWORD_TYPE=${3:-"present"};
 
-if [[ " ${DATASETS[@]} " =~ " $DATASET_NAME " ]]; then
+if [[ ! " ${DATASETS[@]} " =~ " $DATASET_NAME " ]]; then
     echo "Dataset name must be from [$(IFS=\| ; echo "${DATASETS[*]}")].";
     echo "bash retrieve.sh <gpuids> <dataset> <keyword-type>";
     exit;

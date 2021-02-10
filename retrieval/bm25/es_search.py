@@ -15,12 +15,14 @@ def read_jsonlines(file_name):
     return lines
 
 
-def search_es(es_obj, index_name, question_text, n_results=5):
+# help from https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html
+def search_es(es_obj, index_name, keywords, n_results=5):
     # construct query
+    match = [{"match_phrase": {"document_text": kw}} for kw in keywords]
     query = {
-        'query': {
-            'match': {
-                'document_text': question_text
+        "query": {
+            "bool": {
+                "should": match
             }
         }
     }
@@ -47,18 +49,21 @@ def main():
 
     for item in tqdm(input_data):
         if args.keyword == 'all':
-            question = ' ; '.join(item["present"] + item["absent"])
+            # question = ' ; '.join(item["present"] + item["absent"])
+            question = item["present"] + item["absent"]
         else:
             if len(item[args.keyword]) == 0:
                 continue
-            question = ' ; '.join(item[args.keyword])
+            # question = ' ; '.join(item[args.keyword])
+            question = item[args.keyword]
 
         res = search_es(
-            es_obj=es, index_name=args.index_name, question_text=question, n_results=args.n_docs
+            es_obj=es, index_name=args.index_name, keywords=question, n_results=args.n_docs
         )
         result[item["id"]] = {
             "hits": res["hits"]["hits"],
-            "question": question
+            "question": question,
+            "found": False
         }
 
     # evaluate top n accuracy
@@ -68,9 +73,17 @@ def main():
             if q_id == hit["_source"]["document_title"]:
                 result[q_id]["found"] = True
                 break
+        # filtering fields to store less data
+        result[q_id]["hits"] = [
+            {
+                'document_title': h["_source"]["document_title"],
+                '_score': h["_score"]
+            }
+            for h in hits
+        ]
 
     with open(args.output_fp, 'w') as outfile:
-        json.dump(result, outfile)
+        json.dump(result, outfile, indent=True)
 
     top_n_accuracy = len([q_id for q_id, item in result.items() if item["found"] is True]) / len(result)
     print(top_n_accuracy)
