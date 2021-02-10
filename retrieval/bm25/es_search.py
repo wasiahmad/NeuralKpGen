@@ -48,19 +48,22 @@ def main():
 
     for item in tqdm(input_data):
         if args.keyword == 'all':
-            question = item["present"] + item["absent"]
+            keywords = item["present"] + item["absent"]
         else:
             if len(item[args.keyword]) == 0:
                 continue
-            question = item[args.keyword]
+            keywords = item[args.keyword]
 
         res = search_es(
-            es_obj=es, index_name=args.index_name, keywords=question,
-            match_type='match', n_results=args.n_docs
+            es_obj=es,
+            index_name=args.index_name,
+            keywords=keywords,
+            match_type='match',
+            n_results=args.n_docs
         )
         result[item["id"]] = {
             "hits": res["hits"]["hits"],
-            "question": question,
+            "question": keywords,
             "found": False
         }
 
