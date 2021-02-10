@@ -50,9 +50,10 @@ def main():
         if args.keyword == 'all':
             keywords = item["present"] + item["absent"]
         else:
-            if len(item[args.keyword]) == 0:
-                continue
             keywords = item[args.keyword]
+
+        if len(keywords) == 0:
+            continue
 
         res = search_es(
             es_obj=es,

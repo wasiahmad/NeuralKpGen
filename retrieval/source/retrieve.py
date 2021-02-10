@@ -11,10 +11,7 @@
 
 import argparse
 import os
-import csv
-import glob
 import json
-import gzip
 import logging
 import pickle
 import time
@@ -30,7 +27,8 @@ from retrieval.dpr.models import init_biencoder_components
 from retrieval.dpr.options import add_encoder_params, setup_args_gpu, print_args, set_encoder_params_from_state, \
     add_tokenizer_params, add_cuda_params
 from retrieval.dpr.utils.data_utils import Tensorizer
-from retrieval.dpr.utils.model_utils import setup_for_distributed_mode, get_model_obj, load_states_from_checkpoint
+from retrieval.dpr.utils.model_utils import setup_for_distributed_mode, get_model_obj, load_states_from_checkpoint, \
+    move_to_device
 from retrieval.dpr.indexer.faiss_indexers import DenseIndexer, DenseHNSWFlatIndexer, DenseFlatIndexer
 
 logger = logging.getLogger()
@@ -67,23 +65,18 @@ class DenseRetriever(object):
 
         with torch.no_grad():
             for j, batch_start in enumerate(range(0, n, bsz)):
-
                 batch_token_tensors = [
                     self.tensorizer.text_to_tensor(q) for q in questions[batch_start:batch_start + bsz]
                 ]
-
-                q_ids_batch = torch.stack(batch_token_tensors, dim=0).cuda()
-                q_seg_batch = torch.zeros_like(q_ids_batch).cuda()
+                q_ids_batch = move_to_device(torch.stack(batch_token_tensors, dim=0), args.device)
+                q_seg_batch = move_to_device(torch.zeros_like(q_ids_batch), args.device)
                 q_attn_mask = self.tensorizer.get_attn_mask(q_ids_batch)
                 _, out, _ = self.question_encoder(q_ids_batch, q_seg_batch, q_attn_mask)
-
                 query_vectors.extend(out.cpu().split(1, dim=0))
-
                 if len(query_vectors) % 100 == 0:
                     logger.info('Encoded queries %d', len(query_vectors))
 
         query_tensor = torch.cat(query_vectors, dim=0)
-
         logger.info('Total encoded queries tensor %s', query_tensor.size())
 
         assert query_tensor.size(0) == len(questions)
@@ -111,15 +104,18 @@ def parse_jsonl_file(location, keyword_type, sep_token) -> Iterator[Tuple[str, L
         for row in jsonlfile:
             ex = json.loads(row)
             if keyword_type == 'all':
-                question = ';'.join(ex["present"] + ex["absent"])
+                keywords = ex["present"] + ex["absent"]
             else:
-                if len(ex[keyword_type]) == 0:
-                    continue
-                question = ' ; '.join(ex[keyword_type])
-            if "title" in ex and "abstract" in ex:
-                text = ex["title"] + ' {} '.format(sep_token) + ex["abstract"]
-            else:
-                text = ex["text"]
+                keywords = ex[keyword_type]
+
+            if len(keywords) == 0:
+                continue
+
+            question = ' ; '.join(keywords)
+            # if "title" in ex and "abstract" in ex:
+            #     text = ex["title"] + ' {} '.format(sep_token) + ex["abstract"]
+            # else:
+            #     text = ex["text"]
             answers = [ex['id']]
             yield question, answers
 
@@ -188,9 +184,18 @@ def main(args):
 
     tensorizer, encoder, _ = init_biencoder_components(args.encoder_model_type, args, inference_only=True)
     encoder = encoder.question_model
-    encoder, _ = setup_for_distributed_mode(
-        encoder, None, args.device, args.n_gpu, args.local_rank, args.fp16
-    )
+
+    # the following doesn't work for fp16
+    # encoder, _ = setup_for_distributed_mode(
+    #     encoder, None, args.device, args.n_gpu, args.local_rank, args.fp16
+    # )
+
+    encoder.to(args.device)
+    if args.fp16:
+        encoder = encoder.half()
+        if args.n_gpu > 1:
+            encoder = torch.nn.DataParallel(encoder)
+
     encoder.eval()
 
     # load weights from the model file
@@ -213,10 +218,7 @@ def main(args):
 
     retriever = DenseRetriever(encoder, args.batch_size, tensorizer, index)
 
-    # index all passages
-    ctx_files_pattern = args.encoded_ctx_file
-    input_paths = glob.glob(ctx_files_pattern)
-
+    input_paths = args.encoded_ctx_file
     index_path = "_".join(input_paths[0].split("_")[:-1])
     if args.save_or_load_index and (os.path.exists(index_path) or os.path.exists(index_path + ".index.dpr")):
         retriever.index.deserialize_from(index_path)
@@ -238,7 +240,7 @@ def main(args):
     questions_tensor = retriever.generate_question_vectors(questions)
 
     # get top k results
-    top_ids_and_scores = retriever.get_top_docs(questions_tensor.numpy(), args.n_docs)
+    top_ids_and_scores = retriever.get_top_docs(questions_tensor.float().numpy(), args.n_docs)
 
     questions_doc_hits = validate(
         question_answers, top_ids_and_scores, args.validation_workers, args.match
@@ -260,12 +262,12 @@ if __name__ == '__main__':
     parser.add_argument("--keyword", type=str, help="Type of the keywords", default="present",
                         choices=["present", "absent", "all"])
     parser.add_argument('--qa_file', required=True, type=str, default=None,
-                        help="Question and answers file of the format: question \\t ['answer1','answer2', ...]")
-    parser.add_argument('--encoded_ctx_file', type=str, default=None,
-                        help='Glob path to encoded passages (from generate_dense_embeddings tool)')
+                        help="Question and answers file in JSON format")
+    parser.add_argument('--encoded_ctx_file', nargs='+', default='[-]',
+                        help='Files of encode passages (from generate_dense_embeddings tool)')
     parser.add_argument('--out_file', type=str, default=None,
                         help='output .json file path to write results to ')
-    parser.add_argument('--match', type=str, default='string', choices=['regex', 'string'],
+    parser.add_argument('--match', type=str, default='string', choices=['regex', 'string', 'exact'],
                         help="Answer matching logic type")
     parser.add_argument('--n-docs', type=int, default=100, help="Amount of top docs to return")
     parser.add_argument('--validation_workers', type=int, default=16,

@@ -10,7 +10,9 @@ GPU=${1:-0};
 DATASET_NAME=${2:-"KP20k"};
 KEYWORD_TYPE=${3:-"present"};
 
-DATA_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/data";
+BASE_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval";
+DATA_DIR="${BASE_DIR}/data";
+
 if [[ $DATASET_NAME != "KP20k" ]] && [[ $DATASET_NAME != "KPTimes" ]]; then
     echo "Dataset name must be either KP20k or KPTimes.";
     echo "bash encode.sh <gpuids> <dataset> <keyword-type>";
@@ -28,17 +30,17 @@ if [[ $DATASET_NAME == "KP20k" ]]; then
     FILES+=(${DATA_DIR}/semeval.test.jsonl)
     encoder_model_type=hf_bert
     pretrained_model="allenai/scibert_scivocab_uncased";
-    OUTPUT_FILE="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/scikp";
+    OUTPUT_FILE="${BASE_DIR}/outputs/scikp_${KEYWORD_TYPE}";
 elif [[ $DATASET_NAME == "KPTimes" ]]; then
     FILES+=(${DATA_DIR}/KPTimes.train.jsonl)
     FILES+=(${DATA_DIR}/KPTimes.valid.jsonl)
     FILES+=(${DATA_DIR}/KPTimes.test.jsonl)
     encoder_model_type=hf_bert
     pretrained_model="bert-base-uncased";
-    OUTPUT_FILE="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/outputs/web";
+    OUTPUT_FILE="${BASE_DIR}/outputs/web_${KEYWORD_TYPE}";
 fi
 
-MODEL_BASE_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/models";
+MODEL_BASE_DIR="${BASE_DIR}/models";
 CHECKPOINT_DIR_PATH="${MODEL_BASE_DIR}/${DATASET_NAME}_${KEYWORD_TYPE}";
 CKPT_FILENAME="checkpoint_best.pt";
 LOG_FILE="${CHECKPOINT_DIR_PATH}/encoding.log";
@@ -49,9 +51,10 @@ script="${CODE_BASE_DIR}/retrieval/source/encode.py";
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 export CUDA_VISIBLE_DEVICES=$GPU;
 
-BATCH_SIZE=64;
+BATCH_SIZE=512;
 
 python ${script} \
+    --fp16 \
     --dataset $DATASET_NAME \
     --encoder_model_type $encoder_model_type \
     --pretrained_model_cfg $pretrained_model \

@@ -208,13 +208,16 @@ class BiEncoderTrainer(object):
             total_correct_predictions += correct_cnt
             batches += 1
             if (i + 1) % log_result_step == 0:
-                logger.info('Eval step: %d , used_time=%f sec., loss=%f ', i, time.time() - start_time, loss.item())
+                logger.info(
+                    'Eval step: %d , used_time=%f sec., loss=%f ', i, time.time() - start_time, loss.item()
+                )
 
         total_loss = total_loss / batches
         total_samples = batches * args.dev_batch_size * self.distributed_factor
         correct_ratio = float(total_correct_predictions / total_samples)
         logger.info(
-            'NLL Validation: loss = %f. correct prediction ratio  %d/%d ~  %f', total_loss,
+            'NLL Validation: loss = %f. correct prediction ratio  %d/%d ~  %f',
+            total_loss,
             total_correct_predictions,
             total_samples,
             correct_ratio

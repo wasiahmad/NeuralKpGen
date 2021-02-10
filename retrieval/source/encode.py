@@ -13,7 +13,7 @@ import os
 import pathlib
 
 import argparse
-import csv
+import time
 import logging
 import pickle
 from typing import List, Tuple
@@ -87,14 +87,16 @@ def main(args):
 
     encoder = encoder.ctx_model
 
-    if args.fp16:
-        encoder = encoder.half()
-        if args.n_gpu > 1:
-            encoder = torch.nn.DataParallel(encoder)
     # the following doesn't work for fp16
     # encoder, _ = setup_for_distributed_mode(
     #     encoder, None, args.device, args.n_gpu, args.local_rank, args.fp16, args.fp16_opt_level
     # )
+    encoder.to(args.device)
+    if args.fp16:
+        encoder = encoder.half()
+        if args.n_gpu > 1:
+            encoder = torch.nn.DataParallel(encoder)
+
     encoder.eval()
 
     # load weights from the model file
@@ -111,34 +113,39 @@ def main(args):
 
     logger.info('reading data from file=%s', ', '.join(args.ctx_file))
 
-    rows = []
+    data = []
     if args.dataset == "KP20k":
         for file in args.ctx_file:
             with open(file) as jsonlfile:
                 for line in jsonlfile:
                     ex = json.loads(line)
                     text = ex["title"] + ' </s> ' + ex["abstract"]
-                    rows.append((ex['id'], text, None))
+                    data.append((ex['id'], text, None))
 
     shard_id = 0
+    start_time = time.time()
     while True:
         start_idx = shard_id * args.shard_size
-        if start_idx >= len(rows):
+        if start_idx >= len(data):
             break
         end_idx = start_idx + args.shard_size
-        if end_idx >= len(rows):
-            end_idx = len(rows)
+        if end_idx >= len(data):
+            end_idx = len(data)
         logger.info(
-            'Producing encodings for passages range: %d to %d (out of total %d)', start_idx, end_idx, len(rows)
+            'Producing encodings for passages range: %d to %d (out of total %d)',
+            start_idx, end_idx, len(data)
         )
-        rows = rows[start_idx:end_idx]
-        data = gen_ctx_vectors(rows, encoder, tensorizer, False)
+        rows = data[start_idx:end_idx]
+        vectors = gen_ctx_vectors(rows, encoder, tensorizer, False)
         file = args.out_file + '_' + str(shard_id) + '.pkl'
         pathlib.Path(os.path.dirname(file)).mkdir(parents=True, exist_ok=True)
         logger.info('Writing results to %s' % file)
         with open(file, mode='wb') as f:
-            pickle.dump(data, f)
-        logger.info('Total passages processed %d. Written to %s', len(data), file)
+            pickle.dump(vectors, f)
+        logger.info(
+            'Total passages processed %d. Written to %s, time elapsed %f sec.',
+            len(vectors), file, time.time() - start_time
+        )
         shard_id += 1
 
 
