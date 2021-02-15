@@ -35,8 +35,8 @@ elif [[ $DATASET_NAME == "KPTimes" ]]; then
     FILES+=(${DATA_DIR}/KPTimes.train.jsonl)
     FILES+=(${DATA_DIR}/KPTimes.valid.jsonl)
     FILES+=(${DATA_DIR}/KPTimes.test.jsonl)
-    encoder_model_type=hf_bert
-    pretrained_model="bert-base-uncased";
+    encoder_model_type=hf_roberta
+    pretrained_model="roberta-base";
     OUTPUT_FILE="${BASE_DIR}/outputs/web_${KEYWORD_TYPE}";
 fi
 

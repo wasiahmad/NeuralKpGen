@@ -20,7 +20,7 @@ Please check https://github.com/facebookresearch/DPR.
 | Nus      | 211     |  0.96 |  0.83 |
 | Krapivin | 400     |  0.90 |  0.60 |
 | SemEval  | 100     |  0.77 |  0.43 |
-| KPTimes  | 20,000  |  ?    |  ?    |
+| KPTimes  | 20,000  |  0.44 |  0.17 |
 
 #### Absent Keyphrases
 
@@ -31,4 +31,4 @@ Please check https://github.com/facebookresearch/DPR.
 | Nus      | 211     |  0.63  |  0.26 |
 | Krapivin | 400     |  0.46  |  0.14 |
 | SemEval  | 100     |  0.48  |  0.09 |
-| KPTimes  | 20,000  |  ?     |  ?    |
+| KPTimes  | 20,000  |  0.60  |  0.21 |

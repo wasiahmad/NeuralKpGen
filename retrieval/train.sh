@@ -21,8 +21,8 @@ if [[ $DATASET_NAME == "KP20k" ]]; then
     encoder_model_type=hf_bert
     pretrained_model="allenai/scibert_scivocab_uncased";
 elif [[ $DATASET_NAME == "KPTimes" ]]; then
-    encoder_model_type=hf_bert
-    pretrained_model="bert-base-uncased";
+    encoder_model_type=hf_roberta
+    pretrained_model="roberta-base";
 fi
 
 train_file="${DATA_DIR}/${DATASET_NAME}.train.jsonl";
@@ -41,16 +41,16 @@ script="${CODE_BASE_DIR}/retrieval/source/train.py";
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 export CUDA_VISIBLE_DEVICES=$GPU;
 
-IFS=',' read -a GPU_IDS <<< "$1";
-NUM_GPU=${#GPU_IDS[@]}
+NUM_GPU=`echo ${CUDA_VISIBLE_DEVICES} | tr -cd , | wc -c`;
+NUM_GPU=`expr ${NUM_GPU} + 1`;
 
 EFFECTIVE_BATCH_SIZE=48;
 PER_GPU_TRAIN_BATCH_SIZE=12;
 REQUIRED_NUM_GPU=$(($EFFECTIVE_BATCH_SIZE / $PER_GPU_TRAIN_BATCH_SIZE));
 BATCH_SIZE=$(($PER_GPU_TRAIN_BATCH_SIZE * $NUM_GPU))
+UPDATE_FREQ=1;
 
 if [[ "$BATCH_SIZE" -gt "$EFFECTIVE_BATCH_SIZE" ]]; then
-    UPDATE_FREQ=1;
     echo "Warning: $REQUIRED_NUM_GPU GPUs are enough for fine-tuning.";
 else
     UPDATE_FREQ=$(($EFFECTIVE_BATCH_SIZE / $BATCH_SIZE));

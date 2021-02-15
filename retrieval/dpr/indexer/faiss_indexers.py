@@ -33,6 +33,8 @@ class DenseIndexer(object):
         buffer = []
         for i, item in enumerate(iterate_encoded_files(vector_files)):
             db_id, doc_vector = item
+            if doc_vector.dtype != 'float32':
+                doc_vector = np.float32(doc_vector)
             buffer.append((db_id, doc_vector))
             if 0 < self.buffer_size == len(buffer):
                 # indexing in batches is beneficial for many faiss index types

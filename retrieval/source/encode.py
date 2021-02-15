@@ -114,12 +114,14 @@ def main(args):
     logger.info('reading data from file=%s', ', '.join(args.ctx_file))
 
     data = []
-    if args.dataset == "KP20k":
+    if args.dataset in ["KP20k", "KPTimes"]:
         for file in args.ctx_file:
             with open(file) as jsonlfile:
                 for line in jsonlfile:
                     ex = json.loads(line)
-                    text = ex["title"] + ' </s> ' + ex["abstract"]
+                    text = ex["title"] + \
+                           ' {} '.format(tensorizer.tokenizer.sep_token) + \
+                           ex["abstract"]
                     data.append((ex['id'], text, None))
 
     shard_id = 0

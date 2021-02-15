@@ -47,8 +47,8 @@ def read_data_from_json_files(
     assert len(upsample_rates) == len(paths), 'up-sample rates parameter doesn\'t match input files amount'
 
     for i, path in enumerate(paths):
-        if dataset == "KP20k":
-            logger.info("Loading KP20k dataset")
+        if dataset in ["KP20k", "KPTimes"]:
+            logger.info("Loading {} dataset".format(dataset))
             with open(path) as reader:
                 for row in reader:
                     ex = json.loads(row)
