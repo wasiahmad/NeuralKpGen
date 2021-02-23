@@ -10,7 +10,7 @@ def MAP(inputfile):
         average_precision = 0
         if ex["found"]:
             for j, hit in enumerate(ex["hits"]):
-                if hit["document_title"] == id:
+                if hit["doc_id"] == id:
                     average_precision = 1 / (j + 1)
                     break
         map += average_precision

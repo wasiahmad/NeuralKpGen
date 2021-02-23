@@ -54,7 +54,7 @@ python decode.py \
 --data_dir "$SRCDIR/${DATASET}/" \
 --checkpoint_dir ${SAVE_DIR_PREFIX}_checkpoints \
 --checkpoint_file checkpoint_best.pt \
---output_file logs/${DATASET}_test.hypo \
+--output_file logs/${DATASET}_hypotheses.txt \
 --batch_size 64 \
 --beam 1 \
 --min_len 1 \
@@ -68,7 +68,7 @@ function evaluate () {
 
 python -W ignore kp_eval.py \
 --src_dir $1 \
---pred_file $2 \
+--file_prefix $2 \
 --tgt_dir . \
 --log_file $3 \
 --k_list 5 M;
@@ -92,10 +92,10 @@ if [[ $2 == 'kp20k' ]]; then
     train "$1" $2
     for dataset in kp20k inspec krapivin nus semeval; do
         decode "$1" $dataset $2
-        evaluate ${SRCDIR}/${dataset} "logs/${dataset}_test.hypo" $dataset
+        evaluate ${SRCDIR}/${dataset} "logs/${dataset}" $dataset
     done
 elif [[ $2 == 'kptimes' ]]; then
     train "$1" $2
     decode "$1" $2 $2
-    evaluate ${SRCDIR}/${2} "logs/${2}_test.hypo" $2
+    evaluate ${SRCDIR}/${2} "logs/${2}" $2
 fi

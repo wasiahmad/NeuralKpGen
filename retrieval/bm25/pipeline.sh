@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 DATASETS=(
-    KP20k
+    kp20k
     inspec
     nus
     semeval
     krapivin
-    KPTimes
+    kptimes
 )
 
-DATASET_NAME=${1:-KP20k};
+DATASET_NAME=${1:-kp20k};
 KEYWORD_TYPE=${2:-present};
 
 if [[ ! " ${DATASETS[@]} " =~ " $DATASET_NAME " ]]; then
@@ -26,16 +26,16 @@ CODE_BASE_DIR=`realpath ../..`;
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 
 FILES=()
-if [[ $DATASET_NAME == "KPTimes" ]]; then
-    FILES+=(${DATA_DIR}/KPTimes.train.jsonl)
-    FILES+=(${DATA_DIR}/KPTimes.valid.jsonl)
-    FILES+=(${DATA_DIR}/KPTimes.test.jsonl)
+if [[ $DATASET_NAME == "kptimes" ]]; then
+    FILES+=(${DATA_DIR}/kptimes.train.jsonl)
+    FILES+=(${DATA_DIR}/kptimes.valid.jsonl)
+    FILES+=(${DATA_DIR}/kptimes.test.jsonl)
     DOMAIN=web
     DB_PATH="${DATA_DIR}/${DOMAIN}.db";
 else
-    FILES+=(${DATA_DIR}/KP20k.train.jsonl)
-    FILES+=(${DATA_DIR}/KP20k.valid.jsonl)
-    FILES+=(${DATA_DIR}/KP20k.test.jsonl)
+    FILES+=(${DATA_DIR}/kp20k.train.jsonl)
+    FILES+=(${DATA_DIR}/kp20k.valid.jsonl)
+    FILES+=(${DATA_DIR}/kp20k.test.jsonl)
     FILES+=(${DATA_DIR}/inspec.test.jsonl)
     FILES+=(${DATA_DIR}/krapivin.test.jsonl)
     FILES+=(${DATA_DIR}/nus.test.jsonl)

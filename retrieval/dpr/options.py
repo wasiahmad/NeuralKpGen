@@ -38,7 +38,10 @@ def add_encoder_params(parser: argparse.ArgumentParser):
                         help="Saved bi-encoder checkpoint file to initialize the model")
     parser.add_argument("--projection_dim", default=0, type=int,
                         help="Extra linear layer on top of standard bert/roberta encoder")
-    parser.add_argument("--sequence_length", type=int, default=512, help="Max length of the encoder input sequence")
+    parser.add_argument("--question_length", type=int, default=64,
+                        help="Max length of the question encoder input sequence")
+    parser.add_argument("--context_length", type=int, default=512,
+                        help="Max length of the question encoder input sequence")
 
 
 def add_training_params(parser: argparse.ArgumentParser):
@@ -95,7 +98,7 @@ def add_reader_preprocessing_params(parser: argparse.ArgumentParser):
 def get_encoder_checkpoint_params_names():
     return [
         'do_lower_case', 'pretrained_model_cfg', 'encoder_model_type',
-        'pretrained_file', 'projection_dim', 'sequence_length'
+        'pretrained_file', 'projection_dim', 'question_length', 'context_length'
     ]
 
 
@@ -121,8 +124,9 @@ def set_encoder_params_from_state(state, args):
     override_params = [(param, state[param]) for param in params_to_save if param in state and state[param]]
     for param, value in override_params:
         if hasattr(args, param):
-            logger.warning('Overriding args parameter value from checkpoint state. Param = %s, value = %s', param,
-                           value)
+            logger.warning(
+                'Overriding args parameter value from checkpoint state. Param = %s, value = %s', param, value
+            )
         setattr(args, param, value)
     return args
 

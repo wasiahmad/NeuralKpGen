@@ -144,6 +144,7 @@ CHECKPOINT=$3
 python -W ignore kp_eval.py \
 --src_file data/${DATASET_NAME}_test.json \
 --pred_file ${MODEL_DIR}/${CHECKPOINT}.${DATASET_NAME}.test \
+--file_prefix ${MODEL_DIR}/${DATASET_NAME} \
 --tgt_dir . \
 --log_file $4 \
 --k_list 5 M
@@ -211,21 +212,21 @@ fi
 
 output_dir=${model_choice}_${dataset_choice}
 if [[ $dataset_choice == 'kp20k' ]]; then
-    train "$1" $dataset_choice $output_dir $model_type $model_name_or_path
+#    train "$1" $dataset_choice $output_dir $model_type $model_name_or_path
     for dataset in kp20k inspec krapivin nus semeval; do
-        decode "$1" $dataset $model_type $model_name_or_path $output_dir $checkpoint_name
+#        decode "$1" $dataset $model_type $model_name_or_path $output_dir $checkpoint_name
         evaluate $dataset $output_dir $checkpoint_name ${model_choice}_${dataset}
     done
 elif [[ $dataset_choice == 'oagk' ]]; then
-    train "$1" $dataset_choice $output_dir $model_type $model_name_or_path
+#    train "$1" $dataset_choice $output_dir $model_type $model_name_or_path
     for dataset in oagk inspec krapivin nus semeval; do
-        decode "$1" $dataset $model_type $model_name_or_path $output_dir $checkpoint_name
+#        decode "$1" $dataset $model_type $model_name_or_path $output_dir $checkpoint_name
         evaluate $dataset $output_dir $checkpoint_name ${model_choice}_${dataset}
     done
 elif [[ $dataset_choice == 'kptimes' ]]; then
-    train "$1" $dataset_choice $output_dir $model_type $model_name_or_path
+#    train "$1" $dataset_choice $output_dir $model_type $model_name_or_path
     dataset=kptimes
-    decode "$1" $dataset $model_type $model_name_or_path $output_dir $checkpoint_name
+#    decode "$1" $dataset $model_type $model_name_or_path $output_dir $checkpoint_name
     evaluate $dataset $output_dir $checkpoint_name ${model_choice}_${dataset}
 else
     echo -n "... Wrong dataset choice!! available choices are: " ;

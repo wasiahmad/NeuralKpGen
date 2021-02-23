@@ -7,23 +7,23 @@ if [[ $# != 3 ]]; then
 fi
 
 GPU=${1:-0};
-DATASET_NAME=${2:-"KP20k"};
+DATASET_NAME=${2:-"kp20k"};
 KEYWORD_TYPE=${3:-"present"};
 
 BASE_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval";
 DATA_DIR="${BASE_DIR}/data";
 
-if [[ $DATASET_NAME != "KP20k" ]] && [[ $DATASET_NAME != "KPTimes" ]]; then
-    echo "Dataset name must be either KP20k or KPTimes.";
+if [[ $DATASET_NAME != "kp20k" ]] && [[ $DATASET_NAME != "kptimes" ]]; then
+    echo "Dataset name must be either kp20k or kptimes.";
     echo "bash encode.sh <gpuids> <dataset> <keyword-type>";
     exit;
 fi
 
 FILES=()
-if [[ $DATASET_NAME == "KP20k" ]]; then
-    FILES+=(${DATA_DIR}/KP20k.train.jsonl)
-    FILES+=(${DATA_DIR}/KP20k.valid.jsonl)
-    FILES+=(${DATA_DIR}/KP20k.test.jsonl)
+if [[ $DATASET_NAME == "kp20k" ]]; then
+    FILES+=(${DATA_DIR}/kp20k.train.jsonl)
+    FILES+=(${DATA_DIR}/kp20k.valid.jsonl)
+    FILES+=(${DATA_DIR}/kp20k.test.jsonl)
     FILES+=(${DATA_DIR}/inspec.test.jsonl)
     FILES+=(${DATA_DIR}/krapivin.test.jsonl)
     FILES+=(${DATA_DIR}/nus.test.jsonl)
@@ -31,10 +31,10 @@ if [[ $DATASET_NAME == "KP20k" ]]; then
     encoder_model_type=hf_bert
     pretrained_model="allenai/scibert_scivocab_uncased";
     OUTPUT_FILE="${BASE_DIR}/outputs/scikp_${KEYWORD_TYPE}";
-elif [[ $DATASET_NAME == "KPTimes" ]]; then
-    FILES+=(${DATA_DIR}/KPTimes.train.jsonl)
-    FILES+=(${DATA_DIR}/KPTimes.valid.jsonl)
-    FILES+=(${DATA_DIR}/KPTimes.test.jsonl)
+elif [[ $DATASET_NAME == "kptimes" ]]; then
+    FILES+=(${DATA_DIR}/kptimes.train.jsonl)
+    FILES+=(${DATA_DIR}/kptimes.valid.jsonl)
+    FILES+=(${DATA_DIR}/kptimes.test.jsonl)
     encoder_model_type=hf_roberta
     pretrained_model="roberta-base";
     OUTPUT_FILE="${BASE_DIR}/outputs/web_${KEYWORD_TYPE}";
@@ -62,4 +62,5 @@ python ${script} \
     --batch_size $BATCH_SIZE \
     --ctx_file "${FILES[@]}" \
     --shard_size 100000 \
+    --context_length 512 \
     --out_file $OUTPUT_FILE 2>&1 | tee $LOG_FILE;

@@ -41,7 +41,7 @@ Steps involved are:
 | Nus      | 211     |  0.97 |  0.87 |
 | Krapivin | 400     |  0.87 |  0.62 |
 | SemEval  | 100     |  0.72 |  0.40 |
-| KPTimes  | 20,000  |  0.64 |  0.28 |
+| KPTimes  | 20,000  |  0.79 |  0.46 |
 
 #### Absent Keyphrases
 
@@ -52,4 +52,4 @@ Steps involved are:
 | Nus      | 211     |  0.55  |  0.30 |
 | Krapivin | 400     |  0.30  |  0.10 |
 | SemEval  | 100     |  0.34  |  0.08 |
-| KPTimes  | 20,000  |  0.65  |  0.32 |
+| KPTimes  | 20,000  |  0.39  |  0.14 |

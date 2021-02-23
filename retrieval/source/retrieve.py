@@ -66,7 +66,8 @@ class DenseRetriever(object):
         with torch.no_grad():
             for j, batch_start in enumerate(range(0, n, bsz)):
                 batch_token_tensors = [
-                    self.tensorizer.text_to_tensor(q) for q in questions[batch_start:batch_start + bsz]
+                    self.tensorizer.text_to_tensor(q, type='question')
+                    for q in questions[batch_start:batch_start + bsz]
                 ]
                 q_ids_batch = move_to_device(torch.stack(batch_token_tensors, dim=0), args.device)
                 q_seg_batch = move_to_device(torch.zeros_like(q_ids_batch), args.device)
@@ -99,17 +100,28 @@ class DenseRetriever(object):
         return results
 
 
-def parse_jsonl_file(location, keyword_type) -> Iterator[Tuple[str, List[str]]]:
+def parse_jsonl_file(location, pred_loc, keyword_type) -> Iterator[Tuple[str, List[str]]]:
+    predictions = []
+    if pred_loc is not None:
+        with open(pred_loc) as jsonlfile:
+            for row in jsonlfile:
+                predictions.append(json.loads(row))
+
     with open(location) as jsonlfile:
-        for row in jsonlfile:
+        for idx, row in enumerate(jsonlfile):
             ex = json.loads(row)
             if keyword_type == 'all':
                 keywords = ex["present"] + ex["absent"]
+                if len(keywords) == 0:
+                    continue
+                if predictions:
+                    keywords = predictions[idx]["present"] + predictions[idx]["absent"]
             else:
                 keywords = ex[keyword_type]
-
-            if len(keywords) == 0:
-                continue
+                if len(keywords) == 0:
+                    continue
+                if predictions:
+                    keywords = predictions[idx][keyword_type]
 
             question = ' ; '.join(keywords)
             answers = [ex['id']]
@@ -228,7 +240,7 @@ def main(args):
     questions = []
     question_answers = []
 
-    for ds_item in parse_jsonl_file(args.qa_file, args.keyword):
+    for ds_item in parse_jsonl_file(args.qa_file, args.pred_file, args.keyword):
         question, answers = ds_item
         questions.append(question)
         question_answers.append(answers)
@@ -257,8 +269,10 @@ if __name__ == '__main__':
 
     parser.add_argument("--keyword", type=str, help="Type of the keywords", default="present",
                         choices=["present", "absent", "all"])
-    parser.add_argument('--qa_file', required=True, type=str, default=None,
+    parser.add_argument('--qa_file', required=True, type=str,
                         help="Question and answers file in JSON format")
+    parser.add_argument('--pred_file', default=None, type=str,
+                        help="Question and answers (predicted) file in JSON format")
     parser.add_argument('--encoded_ctx_file', nargs='+', default='[-]',
                         help='Files of encode passages (from generate_dense_embeddings tool)')
     parser.add_argument('--out_file', type=str, default=None,

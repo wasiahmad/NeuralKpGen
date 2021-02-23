@@ -9,15 +9,16 @@ DATASETS=(
     kptimes
 )
 
-if [[ $# != 3 ]]; then
-    echo "Must provide three arguments";
-    echo "bash train.sh <gpuids> <dataset> <keyword-type>";
+if [[ $# -lt 1 ]]; then
+    echo "Must provide at least one argument";
+    echo "bash kpeval.sh <gpuids> [<dataset> <keyword-type> <model>]";
     exit;
 fi
 
 GPU=${1:-0};
 DATASET_NAME=${2:-"kp20k"};
 KEYWORD_TYPE=${3:-"present"};
+MODEL=${4:-"mass"};
 
 if [[ ! " ${DATASETS[@]} " =~ " $DATASET_NAME " ]]; then
     echo "Dataset name must be from [$(IFS=\| ; echo "${DATASETS[*]}")].";
@@ -42,7 +43,7 @@ TOP_K=100
 
 INPUT_FILE="${DATA_DIR}/${DATASET_NAME}.${SPLIT}.jsonl";
 CKPT_FILENAME="checkpoint_best.pt";
-OUT_FILE="${OUT_DIR}/${DATASET_NAME}_${SPLIT}_${KEYWORD_TYPE}_${TOP_K}.json"
+OUT_FILE="${OUT_DIR}/${MODEL}_${DATASET_NAME}_${SPLIT}_${KEYWORD_TYPE}_${TOP_K}.json"
 LOG_FILE="${CHECKPOINT_DIR_PATH}/retrieval.log";
 
 CODE_BASE_DIR=`realpath ..`;
@@ -50,8 +51,14 @@ script="${CODE_BASE_DIR}/retrieval/source/retrieve.py";
 
 export PYTHONPATH=${CODE_BASE_DIR}:$PYTHONPATH;
 export CUDA_VISIBLE_DEVICES=$GPU;
-
 BATCH_SIZE=512;
+
+PRED_DIR=/home/wasiahmad/workspace/projects/NeuralKpGen
+if [[ $MODEL = 'bart' ]] || [[ $MODEL = 'mass' ]]; then
+    PRED_FILE="${PRED_DIR}/${MODEL}/logs/${DATASET_NAME}_predictions.txt";
+else
+    PRED_FILE="${PRED_DIR}/unilm/${MODEL}_${DATASET_NAME}/${DATASET_NAME}_predictions.txt";
+fi
 
 if [[ ! -f $OUT_FILE ]]; then
     python ${script} \
@@ -59,6 +66,7 @@ if [[ ! -f $OUT_FILE ]]; then
         --keyword $KEYWORD_TYPE \
         --model_file ${CHECKPOINT_DIR_PATH}/${CKPT_FILENAME} \
         --qa_file $INPUT_FILE \
+        --pred_file $PRED_FILE \
         --encoded_ctx_file $OUTPUT_ENCODED_FILE \
         --out_file $OUT_FILE \
         --n-docs $TOP_K \

@@ -7,11 +7,11 @@ mkdir -p $OUT_DIR
 DATA_DIR=${DATA_BASE_DIR}/scikp/kp20k_separated
 
 for split in train valid test; do
-    if [[ ! -f $OUT_DIR/KP20k.${split}.jsonl ]]; then
+    if [[ ! -f $OUT_DIR/kp20k.${split}.jsonl ]]; then
         python convert.py \
             -src_file $DATA_DIR/${split}_src.txt \
             -tgt_file $DATA_DIR/${split}_trg.txt \
-            -out_file $OUT_DIR/KP20k.${split}.jsonl \
+            -out_file $OUT_DIR/kp20k.${split}.jsonl \
             -dataset kp20k \
             -split $split;
     fi
@@ -33,10 +33,10 @@ done
 DATA_DIR=${DATA_BASE_DIR}/kptimes
 
 for split in train valid test; do
-    if [[ ! -f $OUT_DIR/KPTimes.${split}.jsonl ]]; then
+    if [[ ! -f $OUT_DIR/kptimes.${split}.jsonl ]]; then
         python convert.py \
             -input_file $DATA_DIR/KPTimes.${split}.jsonl \
-            -out_file $OUT_DIR/KPTimes.${split}.jsonl \
+            -out_file $OUT_DIR/kptimes.${split}.jsonl \
             -dataset kptimes \
             -split $split;
     fi

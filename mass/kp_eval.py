@@ -44,158 +44,6 @@ def normalize_string(s, dostem=False):
     return stem(white_space_fix(lower(s)))
 
 
-def log_result(score_dict):
-    """
-    :param result:
-    :param time: total time used for evaluation
-    :param mode: train, valid or test
-    :return:
-    """
-    # score_dict['topk_dict'] = {'present': [5, 'M'], 'absent': [5, 'M'], 'all': [5, 'M']}
-    result = dict()
-    topk_dict = score_dict['topk_dict']
-    for tag, topk_list in topk_dict.items():
-        tag = tag.lower()
-        for topk in topk_list:
-            # Compute the macro averaged recall, precision and F-1 score
-            macro_avg_precision_k = sum(score_dict['precision@{}_{}'.format(topk, tag)]) / len(
-                score_dict['precision@{}_{}'.format(topk, tag)])
-            macro_avg_recall_k = sum(score_dict['recall@{}_{}'.format(topk, tag)]) / len(
-                score_dict['recall@{}_{}'.format(topk, tag)])
-            macro_avg_f1_score_k = (2 * macro_avg_precision_k * macro_avg_recall_k) / \
-                                   (macro_avg_precision_k + macro_avg_recall_k) if \
-                (macro_avg_precision_k + macro_avg_recall_k) > 0 else 0.0
-            _topk = topk.lower() if isinstance(topk, str) else topk
-            result['precision_at_{}_{}'.format(_topk, tag)] = '%.3f' % macro_avg_precision_k
-            result['recall_at_{}_{}'.format(_topk, tag)] = '%.3f' % macro_avg_recall_k
-            result['f1_at_{}_{}'.format(_topk, tag)] = '%.3f' % macro_avg_f1_score_k
-
-    table = PrettyTable()
-    table.field_names = ["Metric Name", "Present", "Absent", "All"]
-    table.align["Metric Name"] = "l"
-    table.align["Present"] = "r"
-    table.align["Absent"] = "r"
-    table.align["Overall"] = "r"
-
-    for metric in ["precision", "recall", "f1"]:
-        for k in topk_dict["present"]:
-            k = k.lower() if isinstance(k, str) else k
-            row = ['{}_at_{}'.format(metric, k)]
-            for tag in ["present", "absent", "all"]:
-                row += [result['{}_at_{}_{}'.format(metric, k, tag)]]
-            table.add_row(row)
-
-    logger.info(table)
-    return result
-
-
-def eval_accuracies(hypotheses, references, sources,
-                    ex_ids=None, filename=None,
-                    copy_info=None, print_copy_info=False,
-                    disable_extra_one_word_filter=False,
-                    no_source_output=False,
-                    k_list=[5, 'M'],
-                    dataset_name=None):
-    """An unofficial evalutation helper.
-     Arguments:
-        hypotheses: A mapping from instance id to predicted sequences.
-        references: A mapping from instance id to ground truth sequences.
-        copy_info: Map of id --> copy information.
-        sources: Map of id --> input text sequence.
-        filename:
-        print_copy_info:
-    """
-    score_dict = defaultdict(list)
-    k_list = process_input_ks(k_list)
-    topk_dict = {'present': k_list, 'absent': k_list, 'all': k_list}
-
-    fw = open(filename, 'w') if filename else None
-    for i in range(len(references)):
-        stemmed_hyp = [normalize_string(nh, dostem=True) for nh in hypotheses[i]]
-        dup_removed = []
-        printable_hyp = []
-        for nh, sh in zip(hypotheses[i], stemmed_hyp):
-            if sh not in dup_removed:
-                dup_removed.append(sh)
-                printable_hyp.append(nh)
-        # calculate score
-        score_dict = evaluate(hypotheses[i], references[i], sources[i],
-                              score_dict, topk_dict, disable_extra_one_word_filter)
-        if fw:
-            logobj = OrderedDict()
-            if ex_ids:
-                key = 'url' if dataset_name == 'openkp' else 'id'
-                logobj[key] = ex_ids[i]
-            if not no_source_output:
-                logobj['source'] = sources[i]
-            logobj['KeyPhrases'] = printable_hyp
-            logobj['references'] = references[i]
-            key = 'f1_score@%s_present' % str(k_list[0])
-            logobj[key] = score_dict[key][i]
-            fw.write(json.dumps(logobj) + '\n')
-
-    if fw:
-        fw.close()
-
-    score_dict['topk_dict'] = topk_dict
-    return score_dict
-
-
-def v2_eval_accuracies(present_absent_kps,
-                       ex_ids=None,
-                       filename=None,
-                       disable_extra_one_word_filter=DISABLE_EXTRA_ONE_WORD_FILTER,
-                       k_list=[5, 'M'],
-                       dataset_name=None):
-    """An unofficial evalutation helper.
-     Arguments:
-        present_absent_kps: a list of dict {'present': [], 'absent': []}.
-        filename:
-        print_copy_info:
-    """
-    score_dict = defaultdict(list)
-    k_list = process_input_ks(k_list)
-    topk_dict = {'present': k_list, 'absent': k_list, 'all': k_list}
-
-    fw = open(filename, 'w') if filename else None
-    for i in range(len(present_absent_kps)):
-        pred_pkp = present_absent_kps[i]['present']['pred']
-        pred_akp = present_absent_kps[i]['absent']['pred']
-        gold_pkp = present_absent_kps[i]['present']['gold']
-        gold_akp = present_absent_kps[i]['absent']['gold']
-        stemmed_pred_pkp = [normalize_string(nh, dostem=True) for nh in pred_pkp]
-        stemmed_pred_akp = [normalize_string(nh, dostem=True) for nh in pred_akp]
-        dup_removed = set()
-        printable_pkp, printable_akp = [], []
-        for nh, sh in zip(pred_pkp, stemmed_pred_pkp):
-            if sh not in dup_removed:
-                dup_removed.add(sh)
-                printable_pkp.append(nh)
-        for nh, sh in zip(pred_akp, stemmed_pred_akp):
-            if sh not in dup_removed:
-                dup_removed.add(sh)
-                printable_akp.append(nh)
-        # calculate score
-        score_dict = v2_evaluate(printable_pkp, printable_akp, gold_pkp, gold_akp,
-                                 score_dict, topk_dict, disable_extra_one_word_filter)
-        if fw:
-            logobj = OrderedDict()
-            if ex_ids:
-                key = 'url' if dataset_name == 'openkp' else 'id'
-                logobj[key] = ex_ids[i]
-            logobj['KeyPhrases'] = {'present': printable_pkp, 'absent': printable_akp}
-            logobj['references'] = {'present': gold_pkp, 'absent': gold_akp}
-            key = 'f1_score@%s_present' % str(k_list[0])
-            logobj[key] = score_dict[key][i]
-            fw.write(json.dumps(logobj) + '\n')
-
-    if fw:
-        fw.close()
-
-    score_dict['topk_dict'] = topk_dict
-    return score_dict
-
-
 def update_score_dict(trg_token_2dlist_stemmed, pred_token_2dlist_stemmed, k_list, score_dict, tag):
     num_targets = len(trg_token_2dlist_stemmed)
     num_predictions = len(pred_token_2dlist_stemmed)
@@ -218,102 +66,6 @@ def update_score_dict(trg_token_2dlist_stemmed, pred_token_2dlist_stemmed, k_lis
 
     score_dict['num_targets_{}'.format(tag)].append(num_targets)
     score_dict['num_predictions_{}'.format(tag)].append(num_predictions)
-    return score_dict
-
-
-def evaluate(pred_str_list, trg_str_list, src_l, score_dict, topk_dict,
-             disable_extra_one_word_filter=False):
-    # convert the str to token list
-    pred_token_2dlist = [pred_str.strip().split(' ') for pred_str in pred_str_list]
-    trg_token_2dlist = [trg_str.strip().split(' ') for trg_str in trg_str_list]
-
-    src_l = src_l.strip()
-    if constants.TITLE_SEP in src_l:
-        [title, context] = src_l.strip().split(constants.TITLE_SEP)
-    else:
-        title = ""
-        context = src_l
-    src_token_list = title.strip().split(' ') + context.strip().split(' ')
-
-    # perform stemming
-    stemmed_src_token_list = stem_word_list(src_token_list)
-    stemmed_trg_token_2dlist = stem_str_list(trg_token_2dlist)
-    stemmed_pred_token_2dlist = stem_str_list(pred_token_2dlist)
-
-    # Filter out duplicate, invalid, and extra one word predictions
-    filtered_stemmed_pred_token_2dlist, num_duplicated_predictions = filter_prediction(True,
-                                                                                       disable_extra_one_word_filter,
-                                                                                       stemmed_pred_token_2dlist)
-
-    # Remove duplicated targets
-    unique_stemmed_trg_token_2dlist, num_duplicated_trg = find_unique_target(stemmed_trg_token_2dlist)
-
-    # separate present and absent keyphrases
-    present_filtered_stemmed_pred_token_2dlist, absent_filtered_stemmed_pred_token_2dlist = separate_present_absent_by_source(
-        stemmed_src_token_list, filtered_stemmed_pred_token_2dlist, False)
-    present_unique_stemmed_trg_token_2dlist, absent_unique_stemmed_trg_token_2dlist = separate_present_absent_by_source(
-        stemmed_src_token_list, unique_stemmed_trg_token_2dlist, False)
-
-    # compute all the metrics and update the score_dict
-    score_dict = update_score_dict(unique_stemmed_trg_token_2dlist,
-                                   filtered_stemmed_pred_token_2dlist,
-                                   topk_dict['all'], score_dict, 'all')
-    # compute all the metrics and update the score_dict for present keyphrase
-    score_dict = update_score_dict(present_unique_stemmed_trg_token_2dlist,
-                                   present_filtered_stemmed_pred_token_2dlist,
-                                   topk_dict['present'], score_dict, 'present')
-    # compute all the metrics and update the score_dict for absent keyphrase
-    score_dict = update_score_dict(absent_unique_stemmed_trg_token_2dlist,
-                                   absent_filtered_stemmed_pred_token_2dlist,
-                                   topk_dict['absent'], score_dict, 'absent')
-
-    return score_dict
-
-
-def v2_evaluate(pred_pkp_list, pred_akp_list, trg_pkp_list, trg_akp_list,
-                score_dict, topk_dict, disable_extra_one_word_filter=False):
-    # convert the str to token list
-    pkp_pred_token_2dlist = [pred_str.strip().split(' ') for pred_str in pred_pkp_list]
-    akp_pred_token_2dlist = [pred_str.strip().split(' ') for pred_str in pred_akp_list]
-    pkp_token_2dlist = [trg_str.strip().split(' ') for trg_str in trg_pkp_list]
-    akp_token_2dlist = [trg_str.strip().split(' ') for trg_str in trg_akp_list]
-
-    # perform stemming
-    pkp_stemmed_pred_token_2dlist = stem_str_list(pkp_pred_token_2dlist)
-    akp_stemmed_pred_token_2dlist = stem_str_list(akp_pred_token_2dlist)
-    pkp_stemmed_trg_token_2dlist = stem_str_list(pkp_token_2dlist)
-    akp_stemmed_trg_token_2dlist = stem_str_list(akp_token_2dlist)
-
-    # Filter out duplicate, invalid, and extra one word predictions
-    present_filtered_stemmed_pred_token_2dlist, _ = filter_prediction(True,
-                                                                      disable_extra_one_word_filter,
-                                                                      pkp_stemmed_pred_token_2dlist)
-    absent_filtered_stemmed_pred_token_2dlist, _ = filter_prediction(True,
-                                                                     disable_extra_one_word_filter,
-                                                                     akp_stemmed_pred_token_2dlist)
-
-    # Remove duplicated targets
-    present_unique_stemmed_trg_token_2dlist, _ = find_unique_target(pkp_stemmed_trg_token_2dlist)
-    absent_unique_stemmed_trg_token_2dlist, _ = find_unique_target(akp_stemmed_trg_token_2dlist)
-
-    unique_stemmed_trg_token_2dlist = present_unique_stemmed_trg_token_2dlist + \
-                                      absent_unique_stemmed_trg_token_2dlist
-    filtered_stemmed_pred_token_2dlist = present_filtered_stemmed_pred_token_2dlist + \
-                                         absent_filtered_stemmed_pred_token_2dlist
-
-    # compute all the metrics and update the score_dict
-    score_dict = update_score_dict(unique_stemmed_trg_token_2dlist,
-                                   filtered_stemmed_pred_token_2dlist,
-                                   topk_dict['all'], score_dict, 'all')
-    # compute all the metrics and update the score_dict for present keyphrase
-    score_dict = update_score_dict(present_unique_stemmed_trg_token_2dlist,
-                                   present_filtered_stemmed_pred_token_2dlist,
-                                   topk_dict['present'], score_dict, 'present')
-    # compute all the metrics and update the score_dict for absent keyphrase
-    score_dict = update_score_dict(absent_unique_stemmed_trg_token_2dlist,
-                                   absent_filtered_stemmed_pred_token_2dlist,
-                                   topk_dict['absent'], score_dict, 'absent')
-
     return score_dict
 
 
@@ -1054,10 +806,9 @@ def filter_prediction(disable_valid_filter, disable_extra_one_word_filter, pred_
         extra_one_word_seqs_mask, num_one_word_seqs = compute_extra_one_word_seqs_mask(pred_token_2dlist_stemmed)
         pred_filter = pred_filter * extra_one_word_seqs_mask
     filtered_stemmed_pred_str_list = [word_list for word_list, is_keep in
-                                      zip(pred_token_2dlist_stemmed, pred_filter) if
-                                      is_keep]
+                                      zip(pred_token_2dlist_stemmed, pred_filter) if is_keep]
     num_duplicated_predictions = num_predictions - np.sum(is_unique_mask)
-    return filtered_stemmed_pred_str_list, num_duplicated_predictions
+    return filtered_stemmed_pred_str_list, num_duplicated_predictions, is_unique_mask
 
 
 def find_unique_target(trg_token_2dlist_stemmed):
@@ -1085,7 +836,7 @@ def separate_present_absent_by_source(src_token_list_stemmed, keyphrase_token_2d
             present_keyphrase_token2dlist.append(keyphrase_token_list)
         else:
             absent_keyphrase_token2dlist.append(keyphrase_token_list)
-    return present_keyphrase_token2dlist, absent_keyphrase_token2dlist
+    return present_keyphrase_token2dlist, absent_keyphrase_token2dlist, is_present_mask
 
 
 def process_input_ks(ks):
@@ -1125,8 +876,7 @@ def report_ranking_scores(score_dict, topk_list, present_tag):
 
 def main(predictions, exp_path, result_file_suffix, k_list=[5, 'M']):
     source, target, preds = [], [], []
-    for hyp, ref, src in zip(predictions[0], predictions[1],
-                             predictions[2]):
+    for hyp, ref, src in zip(predictions[0], predictions[1], predictions[2]):
         source.append(src)
         target.append(';'.join(ref))
         preds.append(';'.join(hyp))
@@ -1148,9 +898,10 @@ def main(predictions, exp_path, result_file_suffix, k_list=[5, 'M']):
     sum_incorrect_fraction_for_identifying_present = 0
     sum_incorrect_fraction_for_identifying_absent = 0
 
-    for data_idx, (src_l, trg_l, pred_l) in \
-            enumerate(tqdm(zip(source, target, preds),
-                           total=len(source), desc='Evaluating...')):
+    predicted_keyphrases = []
+    for data_idx, (src_l, trg_l, pred_l) in enumerate(
+            tqdm(zip(source, target, preds), total=len(source), desc='Evaluating...')
+    ):
         total_num_src += 1
         # convert the str to token list
         pred_str_list = pred_l.strip().split(';')
@@ -1178,9 +929,9 @@ def main(predictions, exp_path, result_file_suffix, k_list=[5, 'M']):
         stemmed_pred_token_2dlist = stem_str_list(pred_token_2dlist)
 
         # Filter out duplicate, invalid, and extra one word predictions
-        filtered_stemmed_pred_token_2dlist, num_duplicated_predictions = filter_prediction(INVALIDATE_UNK,
-                                                                                           DISABLE_EXTRA_ONE_WORD_FILTER,
-                                                                                           stemmed_pred_token_2dlist)
+        filtered_stemmed_pred_token_2dlist, num_duplicated_predictions, is_unique_mask = filter_prediction(
+            INVALIDATE_UNK, DISABLE_EXTRA_ONE_WORD_FILTER, stemmed_pred_token_2dlist
+        )
         total_num_unique_predictions += (num_predictions - num_duplicated_predictions)
         num_filtered_predictions = len(filtered_stemmed_pred_token_2dlist)
 
@@ -1193,11 +944,24 @@ def main(predictions, exp_path, result_file_suffix, k_list=[5, 'M']):
         if num_unique_targets > max_unique_targets:
             max_unique_targets = num_unique_targets
 
-        # separate present and absent keyphrases
-        present_filtered_stemmed_pred_token_2dlist, absent_filtered_stemmed_pred_token_2dlist = separate_present_absent_by_source(
-            stemmed_src_token_list, filtered_stemmed_pred_token_2dlist, False)
-        present_unique_stemmed_trg_token_2dlist, absent_unique_stemmed_trg_token_2dlist = separate_present_absent_by_source(
-            stemmed_src_token_list, unique_stemmed_trg_token_2dlist, False)
+        # separate present and absent predicted keyphrases
+        present_filtered_stemmed_pred_token_2dlist, absent_filtered_stemmed_pred_token_2dlist, is_present_mask = \
+            separate_present_absent_by_source(stemmed_src_token_list, filtered_stemmed_pred_token_2dlist, False)
+        # separate present and absent gold keyphrases
+        present_unique_stemmed_trg_token_2dlist, absent_unique_stemmed_trg_token_2dlist, _ = \
+            separate_present_absent_by_source(stemmed_src_token_list, unique_stemmed_trg_token_2dlist, False)
+
+        # save the predicted keyphrases
+        filtered_pred_token_2dlist = [kp_tokens for kp_tokens, is_unique
+                                      in zip(pred_token_2dlist, is_unique_mask) if is_unique]
+
+        result = {'id': data_idx, 'present': [], 'absent': []}
+        for kp_tokens, is_present in zip(filtered_pred_token_2dlist, is_present_mask):
+            if is_present:
+                result['present'] += [' '.join(kp_tokens)]
+            else:
+                result['absent'] += [' '.join(kp_tokens)]
+        predicted_keyphrases.append(result)
 
         total_num_present_filtered_predictions += len(present_filtered_stemmed_pred_token_2dlist)
         total_num_present_unique_targets += len(present_unique_stemmed_trg_token_2dlist)
@@ -1220,6 +984,11 @@ def main(predictions, exp_path, result_file_suffix, k_list=[5, 'M']):
                                        absent_filtered_stemmed_pred_token_2dlist,
                                        topk_dict['absent'], score_dict, 'absent')
 
+    if len(predicted_keyphrases) > 0:
+        with open('{}_predictions.txt'.format(args.file_prefix), 'w') as fw:
+            for item in predicted_keyphrases:
+                fw.write(json.dumps(item) + '\n')
+
     total_num_unique_targets = total_num_present_unique_targets + total_num_absent_unique_targets
     total_num_filtered_predictions = total_num_present_filtered_predictions + total_num_absent_filtered_predictions
 
@@ -1233,16 +1002,17 @@ def main(predictions, exp_path, result_file_suffix, k_list=[5, 'M']):
     result_txt_str += ('Total #unique predictions: %d\n' % total_num_unique_predictions)
 
     # report statistics and scores for all predictions and targets
-    result_txt_str_all, field_list_all, result_list_all = report_stat_and_scores(total_num_filtered_predictions,
-                                                                                 total_num_unique_targets,
-                                                                                 total_num_src, score_dict,
-                                                                                 topk_dict['all'], 'all')
+    result_txt_str_all, field_list_all, result_list_all = report_stat_and_scores(
+        total_num_filtered_predictions, total_num_unique_targets, total_num_src, score_dict, topk_dict['all'], 'all'
+    )
     result_txt_str_present, field_list_present, result_list_present = report_stat_and_scores(
-        total_num_present_filtered_predictions, total_num_present_unique_targets, total_num_src, score_dict,
-        topk_dict['present'], 'present')
+        total_num_present_filtered_predictions, total_num_present_unique_targets,
+        total_num_src, score_dict, topk_dict['present'], 'present'
+    )
     result_txt_str_absent, field_list_absent, result_list_absent = report_stat_and_scores(
-        total_num_absent_filtered_predictions, total_num_absent_unique_targets, total_num_src, score_dict,
-        topk_dict['absent'], 'absent')
+        total_num_absent_filtered_predictions, total_num_absent_unique_targets,
+        total_num_src, score_dict, topk_dict['absent'], 'absent'
+    )
     result_txt_str += (result_txt_str_all + result_txt_str_present + result_txt_str_absent)
     field_list = field_list_all + field_list_present + field_list_absent
     result_list = result_list_all + result_list_present + result_list_absent
@@ -1296,8 +1066,8 @@ def report_stat_and_scores(total_num_filtered_predictions, num_unique_trgs, tota
     result_txt_str += "#unique targets: %d\t #unique targets per src:%.3f\n" % \
                       (num_unique_trgs, num_unique_trgs / total_num_src)
 
-    classification_output_str, classification_field_list, classification_result_list = report_classification_scores(
-        score_dict, topk_list, present_tag)
+    classification_output_str, classification_field_list, classification_result_list = \
+        report_classification_scores(score_dict, topk_list, present_tag)
     result_txt_str += classification_output_str
     field_list = classification_field_list
     result_list = classification_result_list
@@ -1352,28 +1122,18 @@ if __name__ == '__main__':
     parser.add_argument('--k_list', nargs='+', default=[5, 'M'], help='K values for evaluation')
     args = parser.parse_args()
 
-    original_sources = {}
+    sources = []
     with open(os.path.join(args.src_dir, 'test.source')) as f:
         for idx, src_text in enumerate(f):
-            original_sources[idx] = src_text.lower()
-
-    original_targets = {}
-    with open(os.path.join(args.src_dir, 'test.target')) as f:
-        for idx, tgt_text in enumerate(f):
-            original_targets[idx] = tgt_text.lower()
+            sources.append(src_text.lower())
 
     hypotheses = []
     references = []
-    sources = []
 
-    with open('{}_source.txt'.format(args.file_prefix)) as f1, \
+    with open(os.path.join(args.src_dir, 'test.target')) as f1, \
             open('{}_hypotheses.txt'.format(args.file_prefix)) as f2:
-        for raw_source, candidate in zip(f1, f2):
-            tgt_idx = int(raw_source.replace('S-', ''))
-            source = original_sources[tgt_idx]
-            sources.append(source)
-
-            refs = original_targets[tgt_idx].split(' {} '.format(constants.KP_SEP))
+        for rs, ps in zip(f1, f2):
+            refs = rs.split(' {} '.format(constants.KP_SEP))
             mod_refs = []
             for r in refs:
                 r = r.replace(' ##', '')
@@ -1381,7 +1141,7 @@ if __name__ == '__main__':
                 mod_refs.append(r)
             references.append(mod_refs)
 
-            preds = candidate.split(' {} '.format(constants.KP_SEP))
+            preds = ps.split(' {} '.format(constants.KP_SEP))
             mod_preds = []
             for p in preds:
                 p = p.replace(' ##', '')
@@ -1390,5 +1150,4 @@ if __name__ == '__main__':
             hypotheses.append(mod_preds)
 
     # print(len(hypotheses), len(references), len(sources))
-    run_eval((hypotheses, references, sources),
-             args.tgt_dir, args.log_file, args.k_list)
+    run_eval((hypotheses, references, sources), args.tgt_dir, args.log_file, args.k_list)

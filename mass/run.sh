@@ -85,17 +85,13 @@ if [[ $2 == 'kp20k' ]]; then
     train "$1" $2
     for dataset in kp20k inspec krapivin nus semeval; do
         decode "$1" $dataset "logs/${dataset}_out.txt" $2
-        grep ^S "logs/${dataset}_out.txt" | cut -f1 > "logs/${dataset}_source.txt"
-        grep ^T "logs/${dataset}_out.txt" | cut -f2- > "logs/${dataset}_target.txt"
-        grep ^H "logs/${dataset}_out.txt" | cut -f3- > "logs/${dataset}_hypotheses.txt"
+        grep ^H "logs/${dataset}_out.txt" | sort -V | cut -f 3- > "logs/${dataset}_hypotheses.txt"
         evaluate "data/raw/${dataset}" "logs/${dataset}" ${dataset}
     done
 elif [[ $2 == 'kptimes' ]]; then
     train "$1" $2
     decode "$1" $2 "logs/${2}_out.txt" $2
-    grep ^S "logs/${2}_out.txt" | cut -f1 > "logs/${2}_source.txt"
-    grep ^T "logs/${2}_out.txt" | cut -f2- > "logs/${2}_target.txt"
-    grep ^H "logs/${2}_out.txt" | cut -f3- > "logs/${2}_hypotheses.txt"
+    grep ^H "logs/${2}_out.txt" | sort -V | cut -f3- > "logs/${2}_hypotheses.txt"
     evaluate "data/raw/${2}" "logs/${2}" ${2}
 fi
 

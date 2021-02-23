@@ -82,13 +82,13 @@ def get_roberta_biencoder_components(args, inference_only: bool = False, **kwarg
 def get_bert_tensorizer(args, tokenizer=None):
     if not tokenizer:
         tokenizer = get_bert_tokenizer(args.pretrained_model_cfg, do_lower_case=args.do_lower_case)
-    return BertTensorizer(tokenizer, args.sequence_length)
+    return BertTensorizer(tokenizer, args.question_length, args.context_length)
 
 
 def get_roberta_tensorizer(args, tokenizer=None):
     if not tokenizer:
         tokenizer = get_roberta_tokenizer(args.pretrained_model_cfg, do_lower_case=args.do_lower_case)
-    return RobertaTensorizer(tokenizer, args.sequence_length)
+    return RobertaTensorizer(tokenizer, args.question_length, args.context_length)
 
 
 def get_optimizer(
@@ -196,13 +196,15 @@ class HFRobertaEncoder(RobertaModel):
 
 
 class BertTensorizer(Tensorizer):
-    def __init__(self, tokenizer: BertTokenizer, max_length: int, pad_to_max: bool = True):
+    def __init__(self, tokenizer: BertTokenizer, question_length: int, context_length: int, pad_to_max: bool = True):
         self.tokenizer = tokenizer
-        self.max_length = max_length
+        self.question_length = question_length
+        self.context_length = context_length
         self.pad_to_max = pad_to_max
 
-    def text_to_tensor(self, text: str, title: str = None, add_special_tokens: bool = True):
+    def text_to_tensor(self, text: str, type: str = None, title: str = None, add_special_tokens: bool = True):
         text = text.strip()
+        max_length = self.question_length if type == 'question' else self.context_length
 
         # tokenizer automatic padding is explicitly disabled since its inconsistent behavior
         if title:
@@ -210,7 +212,7 @@ class BertTensorizer(Tensorizer):
                 title,
                 text_pair=text,
                 add_special_tokens=add_special_tokens,
-                max_length=self.max_length,
+                max_length=max_length,
                 pad_to_max_length=False,
                 truncation=True
             )
@@ -218,16 +220,15 @@ class BertTensorizer(Tensorizer):
             token_ids = self.tokenizer.encode(
                 text,
                 add_special_tokens=add_special_tokens,
-                max_length=self.max_length,
+                max_length=max_length,
                 pad_to_max_length=False,
                 truncation=True
             )
 
-        seq_len = self.max_length
-        if self.pad_to_max and len(token_ids) < seq_len:
-            token_ids = token_ids + [self.tokenizer.pad_token_id] * (seq_len - len(token_ids))
-        if len(token_ids) > seq_len:
-            token_ids = token_ids[0:seq_len]
+        if self.pad_to_max and len(token_ids) < max_length:
+            token_ids = token_ids + [self.tokenizer.pad_token_id] * (max_length - len(token_ids))
+        if len(token_ids) > max_length:
+            token_ids = token_ids[0:max_length]
             token_ids[-1] = self.tokenizer.sep_token_id
 
         return torch.tensor(token_ids)
@@ -253,5 +254,5 @@ class BertTensorizer(Tensorizer):
 
 
 class RobertaTensorizer(BertTensorizer):
-    def __init__(self, tokenizer, max_length: int, pad_to_max: bool = True):
-        super(RobertaTensorizer, self).__init__(tokenizer, max_length, pad_to_max=pad_to_max)
+    def __init__(self, tokenizer, question_length: int, context_length: int, pad_to_max: bool = True):
+        super(RobertaTensorizer, self).__init__(tokenizer, question_length, context_length, pad_to_max=pad_to_max)

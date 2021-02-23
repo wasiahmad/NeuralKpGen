@@ -152,7 +152,11 @@ class BiEncoder(nn.Module):
             current_ctxs_len = len(ctx_tensors)
 
             sample_ctxs_tensors = [
-                tensorizer.text_to_tensor(ctx['text'], title=ctx['title'] if insert_title else None)
+                tensorizer.text_to_tensor(
+                    ctx['text'],
+                    type='context',
+                    title=ctx['title'] if insert_title else None
+                )
                 for ctx in all_ctxs
             ]
 
@@ -163,7 +167,7 @@ class BiEncoder(nn.Module):
                  range(current_ctxs_len + hard_negatives_start_idx, current_ctxs_len + hard_negatives_end_idx)]
             )
 
-            question_tensors.append(tensorizer.text_to_tensor(question))
+            question_tensors.append(tensorizer.text_to_tensor(question, type='question'))
 
         ctxs_tensor = torch.cat([ctx.view(1, -1) for ctx in ctx_tensors], dim=0)
         questions_tensor = torch.cat([q.view(1, -1) for q in question_tensors], dim=0)

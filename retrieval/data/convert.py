@@ -1,5 +1,43 @@
 import json
 import argparse
+import subprocess
+from tqdm import tqdm
+from nltk.stem.porter import *
+from nltk.tokenize import wordpunct_tokenize
+
+stemmer = PorterStemmer()
+
+
+def count_file_lines(file_path):
+    """
+    Counts the number of lines in a file using wc utility.
+    :param file_path: path to file
+    :return: int, no of lines
+    """
+    num = subprocess.check_output(['wc', '-l', file_path])
+    num = num.decode('utf-8').strip().split(' ')
+    return int(num[0])
+
+
+def stem_word_list(word_list):
+    return [stemmer.stem(w.strip().lower()) for w in word_list]
+
+
+def stem_text(text):
+    return ' '.join(stem_word_list(text.split()))
+
+
+def separate_present_absent(source_text, keyphrases):
+    present_kps, absent_kps = [], []
+    stemmed_source = stem_text(source_text)
+    for kp in keyphrases:
+        stemmed_kp = stem_text(kp)
+        if stemmed_kp in stemmed_source:
+            present_kps.append(kp)
+        else:
+            absent_kps.append(kp)
+
+    return present_kps, absent_kps
 
 
 def scikp(args):
@@ -40,18 +78,14 @@ def kptimes(args):
     idx = 0
     with open(args.out_file, 'w', encoding='utf8') as fw:
         with open(args.input_file) as f:
-            for line in f:
+            for line in tqdm(f, total=count_file_lines(args.input_file)):
                 ex = json.loads(line.strip())
                 if len(ex['title']) == 0 or len(ex['abstract']) == 0:
                     continue
                 keyphrases = ex['keyword'].split(';')
-                pkps, akps = [], []
-                text = (ex['title'] + ' ' + ex['abstract']).strip()
-                for kp in keyphrases:
-                    if kp in text:
-                        pkps.append(kp)
-                    else:
-                        akps.append(kp)
+                text = (ex['title'] + ' ' + ex['abstract']).strip().lower()
+                text = ' '.join(wordpunct_tokenize(text))
+                pkps, akps = separate_present_absent(text, keyphrases)
                 obj = {
                     'id': ex['id'],
                     'title': ex['title'],

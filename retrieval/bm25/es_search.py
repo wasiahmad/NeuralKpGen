@@ -63,9 +63,9 @@ def main():
             n_results=args.n_docs
         )
         result[item["id"]] = {
-            "hits": res["hits"]["hits"],
             "question": keywords,
-            "found": False
+            "found": False,
+            "hits": res["hits"]["hits"],
         }
 
     # evaluate top n accuracy
@@ -78,8 +78,8 @@ def main():
         # filtering fields to store less data
         result[q_id]["hits"] = [
             {
-                'document_title': h["_source"]["document_title"],
-                '_score': h["_score"]
+                'doc_id': h["_source"]["document_title"],
+                'score': h["_score"]
             }
             for h in hits
         ]

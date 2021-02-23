@@ -7,20 +7,20 @@ if [[ $# != 3 ]]; then
 fi
 
 GPU=${1:-0};
-DATASET_NAME=${2:-"KP20k"};
+DATASET_NAME=${2:-"kp20k"};
 KEYWORD_TYPE=${3:-"present"};
 
 DATA_DIR="/local/wasiahmad/workspace/projects/NeuralKpGen/retrieval/data";
-if [[ $DATASET_NAME != "KP20k" ]] && [[ $DATASET_NAME != "KPTimes" ]]; then
-    echo "Dataset name must be either KP20k or KPTimes.";
+if [[ $DATASET_NAME != "kp20k" ]] && [[ $DATASET_NAME != "kptimes" ]]; then
+    echo "Dataset name must be either kp20k or kptimes.";
     echo "bash train.sh <gpuids> <dataset> <keyword-type>";
     exit;
 fi
 
-if [[ $DATASET_NAME == "KP20k" ]]; then
+if [[ $DATASET_NAME == "kp20k" ]]; then
     encoder_model_type=hf_bert
     pretrained_model="allenai/scibert_scivocab_uncased";
-elif [[ $DATASET_NAME == "KPTimes" ]]; then
+elif [[ $DATASET_NAME == "kptimes" ]]; then
     encoder_model_type=hf_roberta
     pretrained_model="roberta-base";
 fi
@@ -44,14 +44,14 @@ export CUDA_VISIBLE_DEVICES=$GPU;
 NUM_GPU=`echo ${CUDA_VISIBLE_DEVICES} | tr -cd , | wc -c`;
 NUM_GPU=`expr ${NUM_GPU} + 1`;
 
-EFFECTIVE_BATCH_SIZE=48;
-PER_GPU_TRAIN_BATCH_SIZE=12;
+EFFECTIVE_BATCH_SIZE=128;
+PER_GPU_TRAIN_BATCH_SIZE=16;
 REQUIRED_NUM_GPU=$(($EFFECTIVE_BATCH_SIZE / $PER_GPU_TRAIN_BATCH_SIZE));
 BATCH_SIZE=$(($PER_GPU_TRAIN_BATCH_SIZE * $NUM_GPU))
 UPDATE_FREQ=1;
 
 if [[ "$BATCH_SIZE" -gt "$EFFECTIVE_BATCH_SIZE" ]]; then
-    echo "Warning: $REQUIRED_NUM_GPU GPUs are enough for fine-tuning.";
+    echo "Warning: $REQUIRED_NUM_GPU GPUs are recommended for fine-tuning.";
 else
     UPDATE_FREQ=$(($EFFECTIVE_BATCH_SIZE / $BATCH_SIZE));
 fi
@@ -67,7 +67,8 @@ python ${script} \
     --gradient_accumulation_steps $UPDATE_FREQ \
     --train_file ${train_file} \
     --dev_file ${dev_file} \
-    --sequence_length 256 \
+    --question_length 32 \
+    --context_length 256 \
     --num_train_epochs 5 \
     --eval_per_epoch 1 \
     --learning_rate 2e-5 \
