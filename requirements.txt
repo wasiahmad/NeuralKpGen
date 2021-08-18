@@ -1,0 +1,8 @@
+numpy
+ConfigArgParse
+nltk
+tqdm
+requests
+transformers==3.0.2
+torch>=1.5.1
+-e git://github.com/pytorch/fairseq.git@698e3b91ffa832c286c48035bdff78238b0de8ae
